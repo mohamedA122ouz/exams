@@ -27,9 +27,9 @@ def createUser(request:HttpRequest):
     if email == None :
         errorDict["email"] = "is Null"
     if lastName == None :
-        errorDict["lastName"] = "is Null"
+        errorDict["lastname"] = "is Null"
     if firstName == None :
-        errorDict["firstName"] = "is Null"
+        errorDict["firstname"] = "is Null"
     if password2 == None:
         errorDict["password2"] = "is Null"
     if(password2 != password):

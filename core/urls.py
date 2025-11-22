@@ -1,6 +1,5 @@
 from django.urls import path, include
 from django.contrib.auth import views as authViews
-from .controllers import create
 from core.controllers import home,exam
 
 
@@ -12,5 +11,7 @@ urlpatterns = [
     path('terms',exam.showTerms, name="showTerms"),
     path('terms/create',exam.createTerm,name="createTerm"),
     path('years',exam.showYears,name="showYears"),
-    path('years/create',exam.createYear,name="showYears")
+    path('years/create',exam.createYear,name="createYear"),
+    path('subjects/create',exam.createSubject,name="createSubject"),
+    path('subjects',exam.showSubjects,name="showSubjects")
 ]
