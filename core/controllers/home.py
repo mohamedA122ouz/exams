@@ -10,6 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 def home(request:HttpRequest):
     return render(request,"home/home.html")
 
+def signup(request:HttpRequest):
+    return render(request,"registration/signup.html")
 @require_POST
 @csrf_exempt
 def createUser(request:HttpRequest):
@@ -35,13 +37,19 @@ def createUser(request:HttpRequest):
     if(password2 != password):
         errorDict["password2"] = "is different the entered password"
     if len(errorDict) != 0:
-        return JsonResponse(errorDict)
+        if request.path.startswith("/api/"):
+            return JsonResponse(errorDict)
+        return render(request,"utils/faild.html")
     
     try:
         user = User.objects.create_user(username=username,password=password,email=email,last_name=lastName,first_name=firstName)#type:ignore
         if not user:
-            return JsonResponse({"signup":"faild"},status=400)
-        return JsonResponse({"signup":"successful"})
+            if request.path.startswith("/api/"):
+                return JsonResponse({"signup":"faild"},status=400)
+            return render(request,"utils/faild.html")
+        if request.path.startswith("/api/"):
+            return JsonResponse({"signup":"successful"})
+        return render(request,"utils/createdSuccessful.html")
     except Exception as e:
         message:str = str(e)
         print(message)
@@ -50,7 +58,9 @@ def createUser(request:HttpRequest):
             return JsonResponse({"signup":"faild already used username"},status=400)
         return JsonResponse({"signup":"faild unknown reason contact admin"},status=400)
         
-    
+
+def userloginPage(request:HttpRequest):
+    return render(request,"registration/login.html")
 @require_POST
 @csrf_exempt
 def userLogin(request:HttpRequest):
