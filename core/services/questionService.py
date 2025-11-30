@@ -38,9 +38,9 @@ samething as ~ with @
 
 class QuestionServices:
     def _parser_text_url(self,text:str)->str:
-        generateNumber:list[int] = random.sample(range(99,999),2)
-        _tildaSign:str = "^"+str(generateNumber[0])+"$%"
-        _atSign = "^"+str(generateNumber[1]) +"$%"
+        generateNumber:list[int] = random.sample(range(97890900,97899999),2)
+        _tildaSign:str = f"^&*{generateNumber[0]}$%"
+        _atSign = f"^&*{generateNumber[1]}$%"
         text = text.replace("#~",_tildaSign)
         text = text.replace("#@",_atSign)
         HTMLText = ""
@@ -50,7 +50,7 @@ class QuestionServices:
             else:
                 if 'http://' in _str or 'https://' in _str:# if it is a url
                     if 'IMAGE' in _str:
-                        HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />'"
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />"
                     elif 'AUDIO' in _str:
                         HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
                     elif 'VIDEO' in _str:
@@ -58,7 +58,7 @@ class QuestionServices:
                 #------------------
                 else:# if the attachment is uploaded to the server
                     if 'IMAGE' in _str:
-                        HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />'"
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />"
                     elif 'AUDIO' in _str:
                         HTMLText += f"<audio src='{_str.replace('AUDIO@','/static/')}' />"
                     elif 'VIDEO' in _str:
@@ -66,6 +66,8 @@ class QuestionServices:
                 #------------------
             #------------------
         #------------------
+        HTMLText = HTMLText.replace(_atSign,'@')
+        HTMLText = HTMLText.replace(_tildaSign,'~')
         return HTMLText
     #------------------
     def showQuestions(self,user,lecture)->list[dict[str,Any]]|dict[str,str]:
