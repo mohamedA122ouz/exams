@@ -2,9 +2,72 @@ from typing import Any, Optional, cast
 
 from core.models.Exams_models import Lecture, Question
 from core.services.userHelper import IUserHelper
+import random
+
+"""
+A parser need to be implemented here so the question could be more complicated
+> allow include attachments:Image,Audio,Video,URL-> for youtube or other
+> allow changing the orientaion of the question and the attachments allowing the question to on top or vice versa
+> for choose question allow the computer understand the correct question and generate the choices from the ans
+
+------SMALL EXAMLE OF WHAT THE TEXT SHOULD LOOK LIKE------
+EXAMPLE:"look at the question and ans~IMAGE@NAME|URL~what do you found interesting in this image?"
+DESCRIPTION: question followed by the image then other question
+
+question
+------IMAGE------
+question_continue
+
+
+PROBLEM:Must a void using @ in the regular question or made up a replacer in regular text like #@ and #~;
+
+solution: generate a sequence of number and special chars but just a random sequence and replace #@ then after replacing all @ then restore replace the random sequence with @
+so lets say that the question have the following text
+
+> "hello#~ are you there~IMAGE@https://test.com/image~what is the name of thie sign '#@'"
+parse should do the following:
+1. generate number Sequenece like 78$451%88
+2. save it like _tilda = $78451%
+3. replace all #~ with the sequenence
+4. process all ~ signs as intended
+5. replace the random sequence store within the var _tilda with the ~ sign
+samething as ~ with @
+"""
+
 
 
 class QuestionServices:
+    def _parser_text_url(self,text:str)->str:
+        generateNumber:list[int] = random.sample(range(99,999),2)
+        _tildaSign:str = "^"+str(generateNumber[0])+"$%"
+        _atSign = "^"+str(generateNumber[1]) +"$%"
+        text = text.replace("#~",_tildaSign)
+        text = text.replace("#@",_atSign)
+        HTMLText = ""
+        for _str in text.split('~'):
+            if '@' not in _str:
+                HTMLText += f"<p>{_str}</p>"
+            else:
+                if 'http://' in _str or 'https://' in _str:# if it is a url
+                    if 'IMAGE' in _str:
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />'"
+                    elif 'AUDIO' in _str:
+                        HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
+                    elif 'VIDEO' in _str:
+                        HTMLText += f"<video src='{_str.replace('VIDEO@','')}' />"
+                #------------------
+                else:# if the attachment is uploaded to the server
+                    if 'IMAGE' in _str:
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />'"
+                    elif 'AUDIO' in _str:
+                        HTMLText += f"<audio src='{_str.replace('AUDIO@','/static/')}' />"
+                    elif 'VIDEO' in _str:
+                        HTMLText += f"<video src='{_str.replace('VIDEO@','/static/')}' />"
+                #------------------
+            #------------------
+        #------------------
+        return HTMLText
+    #------------------
     def showQuestions(self,user,lecture)->list[dict[str,Any]]|dict[str,str]:
         user = cast(IUserHelper,user)
         if not lecture:
