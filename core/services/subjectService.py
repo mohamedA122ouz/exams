@@ -1,7 +1,7 @@
 import json
 from typing import Any, Optional, cast
 
-from core.services.userHelper import IUserHelper
+from core.services.utils.userHelper import IUserHelper
 
 
 class SubjectService:

@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
 
+from core.services.jsonResponseHelper import ResponseHelper
+
 def home(request:HttpRequest):
     return render(request,"home/home.html")
 
@@ -38,25 +40,25 @@ def createUser(request:HttpRequest):
         errorDict["password2"] = "is different the entered password"
     if len(errorDict) != 0:
         if request.path.startswith("/api/"):
-            return JsonResponse(errorDict)
+            return ResponseHelper(errorDict)
         return render(request,"utils/faild.html")
     
     try:
         user = User.objects.create_user(username=username,password=password,email=email,last_name=lastName,first_name=firstName)#type:ignore
         if not user:
             if request.path.startswith("/api/"):
-                return JsonResponse({"signup":"faild"},status=400)
+                return ResponseHelper({"fail":"something went wrong"})
             return render(request,"utils/faild.html")
         if request.path.startswith("/api/"):
-            return JsonResponse({"signup":"successful"})
+            return ResponseHelper({"success":"signup success"})
         return render(request,"utils/createdSuccessful.html")
     except Exception as e:
         message:str = str(e)
         print(message)
         print("Duplicate" in message)
         if("Duplicate" in message and "auth_user.username" in message ):
-            return JsonResponse({"signup":"faild already used username"},status=400)
-        return JsonResponse({"signup":"faild unknown reason contact admin"},status=400)
+            return ResponseHelper({"username":"is already exist"})
+        return ResponseHelper({"fail":"unknown reason"})
         
 
 def userloginPage(request:HttpRequest):
@@ -67,12 +69,12 @@ def userLogin(request:HttpRequest):
     username = request.POST.get("username",None)
     password = request.POST.get("password",None)
     if username == None:
-        return JsonResponse({"username":"is null"})
+        return ResponseHelper({"username":"is null"})
     if password == None:
-        return JsonResponse({"password":"is null"})
+        return ResponseHelper({"password":"is null"})
     user = authenticate(request=request,password=password,username=username)
     if not user == None:
         login(request,user)
-        return JsonResponse({"login":"successfully done"})
+        return ResponseHelper({"success":"successfully done"})
     else:
-        return JsonResponse({"login":"faild"})
+        return ResponseHelper({"login":"username/password is wrong"})

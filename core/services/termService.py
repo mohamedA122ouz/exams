@@ -1,6 +1,6 @@
 from typing import Any, Optional, cast
 
-from core.services.userHelper import IUserHelper
+from core.services.utils.userHelper import IUserHelper
 
 
 class TermService:
@@ -13,7 +13,7 @@ class TermService:
     #------------------
     def createTerm(self,user,name:Optional[str],year_id:Optional[int|str]):
         if not (name):
-            return {"name":"term name is null"}
+            return {"name":"term name cannot be null"}
         if not year_id:
             return {"name":"year ID cannot be null"}
         user = cast(IUserHelper,user)

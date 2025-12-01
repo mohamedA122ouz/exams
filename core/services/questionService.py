@@ -1,9 +1,9 @@
 from typing import Any, Optional, cast
 
 from core.models.Exams_models import Lecture, Question
-from core.services.userHelper import IUserHelper
+from core.services.utils.questionHelper import AnsParserOutput
+from core.services.utils.userHelper import IUserHelper
 import random
-
 """
 A parser need to be implemented here so the question could be more complicated
 > allow include attachments:Image,Audio,Video,URL-> for youtube or other
@@ -33,39 +33,60 @@ parse should do the following:
 5. replace the random sequence store within the var _tilda with the ~ sign
 samething as ~ with @
 """
+"""
+the problem is that the choices is a part of not answer
+okay now the problem I need to find out more realistic way to implement choices
+okay I could easily use & to implement choices
 
+
+
+"""
 
 
 class QuestionServices:
-    def _parser_text_url(self,text:str)->str:
-        generateNumber:list[int] = random.sample(range(97890900,97899999),2)
+    MCQ = 0
+    WRITTEN_QUETION = 1
+    COMPLEX = 2
+    def _parser_text_url(self,question:Question)->str:
+        text:str = question.Text_Url
+        generateNumber:list[int] = random.sample(range(97890900,97899999),3)
         _tildaSign:str = f"^&*{generateNumber[0]}$%"
         _atSign = f"^&*{generateNumber[1]}$%"
+        _randomClass = f"{generateNumber[2]}"
         text = text.replace("#~",_tildaSign)
         text = text.replace("#@",_atSign)
+
+        choices:list[str] = []
         HTMLText = ""
         for _str in text.split('~'):
             if '@' not in _str:
                 HTMLText += f"<p>{_str}</p>"
             else:
-                if 'http://' in _str or 'https://' in _str:# if it is a url
-                    if 'IMAGE' in _str:
+                if 'CHOICE@' in _str and question.Type == self.MCQ:
+                    choices.append(_str.replace('CHOICE@',''))
+                elif 'http://' in _str or 'https://' in _str:# if it is a url
+                    if 'IMAGE@' in _str:
                         HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />"
-                    elif 'AUDIO' in _str:
+                    elif 'AUDIO@' in _str:
                         HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
-                    elif 'VIDEO' in _str:
+                    elif 'VIDEO@' in _str:
                         HTMLText += f"<video src='{_str.replace('VIDEO@','')}' />"
                 #------------------
                 else:# if the attachment is uploaded to the server
-                    if 'IMAGE' in _str:
+                    if 'IMAGE@' in _str:
                         HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />"
-                    elif 'AUDIO' in _str:
+                    elif 'AUDIO@' in _str:
                         HTMLText += f"<audio src='{_str.replace('AUDIO@','/static/')}' />"
-                    elif 'VIDEO' in _str:
+                    elif 'VIDEO@' in _str:
                         HTMLText += f"<video src='{_str.replace('VIDEO@','/static/')}' />"
                 #------------------
             #------------------
         #------------------
+        if ',' in cast(str,question.Ans):
+            choices = [f"<div><input type='checkbox' value='{key}'>{choice}</div>" for key,choice in enumerate(choices)]
+        else:
+            choices = [f"<div><input type='radio' value='{key}' name='{_randomClass+str(question.ID)}'>{choice}</div>" for key,choice in enumerate(choices)]
+        HTMLText += "".join(choices)
         HTMLText = HTMLText.replace(_atSign,'@')
         HTMLText = HTMLText.replace(_tildaSign,'~')
         return HTMLText

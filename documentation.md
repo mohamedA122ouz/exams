@@ -19,6 +19,10 @@
 
 ## Detailed Method clearification
 
+### Response Logic
+
+if user status `200` then the action is done successfully while if the status is `400` then some field is entered wrongly in frontend or not even provided and the server will return them as a key of the json and specify the error while `500` is faild to finish the action and it is an exception need to be traced in most cases `backend bug`
+
 ### login
 
 - Method:`POST`, endpoint:`/api/v0/login`
@@ -31,6 +35,14 @@
     "password":"Password123"
 }
 ```
+
+- Response Example:
+
+|what happen|status|json|
+|---|---|---|
+|success|`200`|{"login": "successfully done"}|
+|wrong field|`400`|{"login": "username/password is wrong"}|
+|server error|`500`|{"fail": "username/password is wrong"}|
 
 ---
 
@@ -51,6 +63,14 @@
 }
 ```
 
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"signup success"}` |
+| wrong field   | `400`  | `{"username":"is already exist"}` <br> `{"email":"is Null","lastname":"is Null","firstname":"is Null","password2":"is different the entered password"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
+
 > Notice username could be anything but it must be unique according to the users in the database
 
 ---
@@ -67,6 +87,14 @@
 - Method:`GET`, endpoint:`/api/v0/terms`
 - Params: `year_id:string|number`
 - Request Example: `/api/v0/terms?year_id=1`
+
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `[{"ID": 1,"Name": "term1","Year_id": 1,"User_id":1}]` |
+| wrong field   | `400`  | `{"year_id":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
 
 ---
 
@@ -87,6 +115,13 @@ OR
     "year_id":1
 }
 ```
+
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"term created successfully"}` |
+| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"year_id":"cannot be null"}` (only one returned at a time) |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
 
 ---
 
@@ -109,6 +144,13 @@ OR
 }
 ```
 
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"year created successfully"}` |
+| wrong field   | `400`  | `{"name":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
 ---
 
 ### create subject
@@ -125,12 +167,26 @@ OR
 }
 ```
 
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"subject created successfully"}` |
+| wrong field   | `400`  | `{"year_id":"cannot be null"}` <br> `{"term_id":"cannot be null"}` <br> `{"name":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
 ---
 
 ### show subjects
 
 - Method:`GET`, endpoint:`/api/v0/subjects`
 - Params: -
+
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"subjects retrieved successfully"}` |
+| wrong field   | `400`  | none → `None` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
 
 ---
 
@@ -139,6 +195,13 @@ OR
 - Method:`GET`, endpoint:`/api/v0/lectures`
 - Params: `subject_id:string`
 - Request Example: `/api/v0/lectures?subject_id=1`
+
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"lectures retrieved successfully"}` |
+| wrong field   | `400`  | `{"subject_id":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
 
 ---
 
@@ -155,6 +218,14 @@ OR
 }
 ```
 
+- Response Details
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"lecture created successfully"}` |
+| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"subject_id":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
+
 ---
 
 ### show questions
@@ -162,6 +233,13 @@ OR
 - Method:`GET`, endpoint:`/api/v0/questions`
 - Params: `lecture:string`
 - Request Example: `/api/v0/questions?lecture=1`
+
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"questions retrieved successfully"}` |
+| wrong field   | `400`  | `{"lecture":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
 
 ---
 
@@ -179,6 +257,14 @@ OR
     "lecture_id":"1"
 }
 ```
+
+
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"question created successfully"}` |
+| wrong field   | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` |
+| server error  | `500`  | `{"fail":"something went wrong"}` |
+
 
 ---
 
