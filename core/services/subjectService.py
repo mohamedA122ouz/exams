@@ -33,6 +33,6 @@ class SubjectService:
         )
         if not subject:
             return {"fail":"faild no reason specified"}
-        return {"sucess":"subject created"}
+        return {"success":"subject created"}
     #------------------
 #------------------CLASS_ENDED#------------------

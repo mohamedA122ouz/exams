@@ -64,6 +64,7 @@ if user status `200` then the action is done successfully while if the status is
 ```
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
 | success       | `200`  | `{"success":"signup success"}` |
@@ -89,12 +90,24 @@ if user status `200` then the action is done successfully while if the status is
 - Request Example: `/api/v0/terms?year_id=1`
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `[{"ID": 1,"Name": "term1","Year_id": 1,"User_id":1}]` |
 | wrong field   | `400`  | `{"year_id":"cannot be null"}` |
 | server error  | `500`  | `{"fail":"something went wrong"}` |
 
+```json
+//success reponse | STATUS 200
+[
+    {
+        "ID": 1,
+        "Name": "term1",
+        "Year_id": 1,
+        "User_id": 1
+    }
+]
+
+```
 
 ---
 
@@ -117,22 +130,33 @@ OR
 ```
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"term created successfully"}` |
-| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"year_id":"cannot be null"}` (only one returned at a time) |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| wrong field   | `400`  | `{"name":"term name cannot be null"}` <br> `{"name":"year ID cannot be null"}` <br> `{"name":"year doesn't exist"}` (only one returned at a time) |
+| server error  | `500`  | `{"fail":"term creation faild"}` |
 
 ---
 
-### show years
+## show years
 
 - Method:`GET`, endpoint:`/api/v0/years`
 - Params: -
 
+```json
+//success response | STATUS:200
+[
+    {
+        "ID": 1,
+        "Name": "Year1",
+        "User_id": 1
+    }
+]
+```
+
 ---
 
-### create year
+## create year
 
 - Method:`POST`, endpoint:`/api/v0/years/create`
 - Params: `name:string`
@@ -145,15 +169,15 @@ OR
 ```
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"year created successfully"}` |
-| wrong field   | `400`  | `{"name":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"name":"cannot create two years with the same name"}` |
+| server error  | `500`  | `{"fail":"created faild"}` |
 
 ---
 
-### create subject
+## create subject
 
 - Method:`POST`, endpoint:`/api/v0/subjects/create`
 - Params: `year_id:string|number`, `term_id:string|number`,`name:string`
@@ -168,44 +192,76 @@ OR
 ```
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"subject created successfully"}` |
-| wrong field   | `400`  | `{"year_id":"cannot be null"}` <br> `{"term_id":"cannot be null"}` <br> `{"name":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| wrong field   | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"faild term is not exist"}` <br> `{"creation":"faild year is not exist"}` |
+| server error  | `500`  | `{"fail":"faild no reason specified"}` |
 
 ---
 
-### show subjects
+## show subjects
 
 - Method:`GET`, endpoint:`/api/v0/subjects`
 - Params: -
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"subjects retrieved successfully"}` |
 | wrong field   | `400`  | none → `None` |
 | server error  | `500`  | `{"fail":"something went wrong"}` |
 
+```json
+//success reponse | STATUS 200
+[
+    {
+        "ID": 1,
+        "Name": "advanced OOP 1",
+        "User_id": 1,
+        "Term_id": 1,
+        "Year_id": 1
+    },
+    {
+        "ID": 2,
+        "Name": "advanced OOP 2",
+        "User_id": 1,
+        "Term_id": 1,
+        "Year_id": 1
+    }
+]
+```
+
 ---
 
-### show lectures
+## show lectures
 
 - Method:`GET`, endpoint:`/api/v0/lectures`
 - Params: `subject_id:string`
 - Request Example: `/api/v0/lectures?subject_id=1`
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"lectures retrieved successfully"}` |
 | wrong field   | `400`  | `{"subject_id":"cannot be null"}` |
 | server error  | `500`  | `{"fail":"something went wrong"}` |
 
+```json
+//success reponse | STATUS 200
+[
+    {
+        "ID": 1,
+        "Name": "lec1",
+        "Subject_id": 1,
+        "User_id": 1
+    }
+]
+```
+
 ---
 
-### create lectures
+## create lectures
 
 - Method:`POST`, endpoint:`/api/v0/lectures/create`
 - Params: `name:string`, `subject_id:string|number`
@@ -221,14 +277,14 @@ OR
 - Response Details
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"lecture created successfully"}` |
-| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"subject_id":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| success       | `200`  | `{"success":"successful"}` |
+| wrong field   | `400`  | `{"name":"cannot give null name"}` <br> `{"subject_id":"cannot be null"}` <br> `{"subject":"is not found"}` <br> `{"name":"cannot create two lectures with the same name"}`  |
+| server error  | `500`  | `{"fail":"no lecture created"}` |
 
 
 ---
 
-### show questions
+## show questions
 
 - Method:`GET`, endpoint:`/api/v0/questions`
 - Params: `lecture:string`
@@ -236,14 +292,24 @@ OR
 
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"questions retrieved successfully"}` |
 | wrong field   | `400`  | `{"lecture":"cannot be null"}` |
 | server error  | `500`  | `{"fail":"something went wrong"}` |
 
+```json
+//success reponse | STATUS 200
+[
+    {
+        "ID": 1,
+        "Name": "lec1",
+        "Subject_id": 1,
+        "User_id": 1
+    }
+]
+```
 
 ---
 
-### create question
+## create question
 
 - Method:`POST`, endpoint:`/api/v0/question/create`
 - Params: `text_url:string`, `type:string|number`, `ans:string`, `lecture_id:string`
@@ -252,24 +318,32 @@ OR
 ```json
 {
     "text_url":"How are you?",
-    "type":"1",//could be "0","1","2"
+    "type":"1",//could be "0","1","2" and below will understand
     "ans":"fine Thank you",
     "lecture_id":"1"
 }
 ```
 
+> MCQ = "0"
+> WRITTEN_QUETION = "1"
+> COMPLEX = "2"
 
 | what happen   | status | json |
 |---------------|--------|------|
-| success       | `200`  | `{"success":"question created successfully"}` |
-| wrong field   | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
-
+| success       | `200`  | `{"success":"creation success"}` |
+| wrong field   | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"lecture":"lecture not found"}` <br> `{"type":"must be number"}`|
+| server error  | `500`  | `{"fail":"creation faild"}` |
 
 ---
 
-### create questions
+## create questions
 
 - Method:`POST`, endpoint:`/api/v0/questions/create`
+
+| what happen   | status | json |
+|---------------|--------|------|
+| success       | `200`  | `{"success":"questions list created successfully"}` |
+| wrong field   | `400`  | `{"num":"questions number cannot be null"}` <br> `{"num":"questions number cannot be a text"}` <br> `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"num":"some of the parameters doesn't have the same length of the questions number 'num'"}`|
+| server error  | `500`  | `{"fail":"questions list faild to be created"}` |
 
 ---

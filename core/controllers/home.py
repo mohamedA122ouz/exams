@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
 
-from core.services.jsonResponseHelper import ResponseHelper
+from core.services.utils.jsonResponseHelper import ResponseHelper
 
 def home(request:HttpRequest):
     return render(request,"home/home.html")

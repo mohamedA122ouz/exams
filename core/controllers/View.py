@@ -7,8 +7,8 @@ from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
-from core.services.jsonResponseHelper import ResponseHelper
-from core.services.viewResponseHelper import HTMLResponse
+from core.services.utils.jsonResponseHelper import ResponseHelper
+from core.services.utils.viewResponseHelper import HTMLResponse
 from core.services.yearServices import YearService
 
 
