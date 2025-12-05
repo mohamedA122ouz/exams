@@ -36,9 +36,6 @@ samething as ~ with @
 """
 the problem is that the choices is a part of not answer
 okay now the problem I need to find out more realistic way to implement choices
-okay I could easily use & to implement choices
-
-
 
 """
 
@@ -55,7 +52,6 @@ class QuestionServices:
         _randomClass = f"{generateNumber[2]}"
         text = text.replace("#~",_tildaSign)
         text = text.replace("#@",_atSign)
-
         choices:list[str] = []
         HTMLText = ""
         for _str in text.split('~'):
