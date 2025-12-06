@@ -3,11 +3,11 @@ from core.services.utils.userHelper import IUserHelper
 
 
 class LectureService:
-    def showLectures(self,user,subject_id:Optional[int|str])->dict[str,str]|list[dict[str,Any]]:
+    def showLectures(self,user,subject_id:Optional[int|str],limit:int=100,last_id:int=0)->dict[str,str]|list[dict[str,Any]]:
         user = cast(IUserHelper,user)
         if not subject_id:
             return {"subject_id":"ID cannot be null"}
-        lecture = user.Lectures.filter(Subject__ID=subject_id).values()
+        lecture = user.Lectures.filter(Subject__ID=subject_id,ID__gt=last_id)[:limit].values()
         if not lecture:
             return {"lecture":"no lecture found"}
         return list(lecture)

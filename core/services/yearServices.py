@@ -14,9 +14,9 @@ class YearService:
             return {"success":"created successfully"}
         return {"fail":"created faild"}
     #------------------
-    def showYears(self,user)->list[dict[str,Any]]:
+    def showYears(self,user,limit:int=100,last_id:int=0)->list[dict[str,Any]]:
         user = cast(IUserHelper,user)
-        years = user.Years.values()
+        years = user.Years.filter(ID__gt=last_id)[:limit].values()
         return list(years)
     #------------------
 #------------------CLASS_ENDED#------------------

@@ -290,11 +290,11 @@ OR
 
 - Method:`GET`, endpoint:`/api/v0/questions`
 - Params: `lecture:string`
-- Request Example: `/api/v0/questions?lecture=1`
+- Request Example: `/api/v0/questions?lecture_id=1`
 
 | what happen   | status | json |
 |---------------|--------|------|
-| wrong field   | `400`  | `{"lecture":"cannot be null"}` |
+| wrong field   | `400`  | `{"lecture_id":"cannot be null"}` |
 | server error  | `500`  | `{"fail":"something went wrong"}` |
 
 ```json

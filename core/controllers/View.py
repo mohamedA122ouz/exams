@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 from django.http import HttpRequest,JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
@@ -7,6 +7,7 @@ from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
+from core.services.utils import userHelper
 from core.services.utils.jsonResponseHelper import ResponseHelper
 from core.services.utils.viewResponseHelper import HTMLResponse
 from core.services.yearServices import YearService
@@ -14,19 +15,30 @@ from core.services.yearServices import YearService
 
 @require_GET
 def showYears(request:HttpRequest):
-    return render(request,"home/home.html",HTMLResponse(YearService().showYears(request.user)))
+    limit = request.GET.get("limit",100)
+    if isinstance(limit,str) and limit.isnumeric():
+        limit = int(limit)
+    last_id = request.GET.get("last_id",0)
+    if isinstance(last_id,str) and last_id.isnumeric():
+        last_id = int(last_id)
+    return render(request,"home/home.html",HTMLResponse(YearService().showYears(request.user,cast(int,limit),cast(int,last_id))))
 #------------------
 @require_POST
 def createYear(request:HttpRequest):
     yearName = request.POST.get("name",None)
     return ResponseHelper(YearService().createYear(request.user,yearName))
 #------------------
-#level two
 @require_GET
 @csrf_exempt
 def showTerms(request:HttpRequest)->JsonResponse:
+    limit = request.GET.get("limit",100)
+    if isinstance(limit,str) and limit.isnumeric():
+        limit = int(limit)
+    last_id = request.GET.get("last_id",0)
+    if isinstance(last_id,str) and last_id.isnumeric():
+        last_id = int(last_id)
     yearID = request.GET.get("year_id",None)
-    return ResponseHelper(TermService().showTerms(request.user,yearID))
+    return ResponseHelper(TermService().showTerms(request.user,yearID,cast(int,limit),cast(int,last_id)))
 #------------------
 @require_POST
 @csrf_exempt
@@ -38,7 +50,13 @@ def createTerm(request:HttpRequest):
 @require_GET
 @csrf_exempt
 def showSubjects(request:HttpRequest):
-    return ResponseHelper(SubjectService().showSubjects(request.user))
+    limit = request.GET.get("limit",100)
+    if isinstance(limit,str) and limit.isnumeric():
+        limit = int(limit)
+    last_id = request.GET.get("last_id",0)
+    if isinstance(last_id,str) and last_id.isnumeric():
+        last_id = int(last_id)
+    return ResponseHelper(SubjectService().showSubjects(request.user,cast(int,limit),cast(int,last_id)))
 #------------------
 @require_POST
 @csrf_exempt
@@ -51,8 +69,14 @@ def createSubject(request:HttpRequest):
 @require_GET
 @csrf_exempt
 def showLectures(request:HttpRequest)->JsonResponse:
+    limit = request.GET.get("limit",100)
+    if isinstance(limit,str) and limit.isnumeric():
+        limit = int(limit)
+    last_id = request.GET.get("last_id",0)
+    if isinstance(last_id,str) and last_id.isnumeric():
+        last_id = int(last_id)
     subjectID = request.GET.get("subject_id",None)
-    return ResponseHelper(LectureService().showLectures(request.user,subjectID))
+    return ResponseHelper(LectureService().showLectures(request.user,subjectID,cast(int,limit),cast(int,last_id)))
 #------------------
 @require_POST
 @csrf_exempt
@@ -64,8 +88,14 @@ def createLectures(request:HttpRequest)->JsonResponse:
 @require_GET
 @csrf_exempt
 def showQuestions(request:HttpRequest)->JsonResponse:
-    lecture = request.GET.get("lecture",None)
-    return ResponseHelper(QuestionServices().showQuestions(request.user,lecture))
+    limit = request.GET.get("limit",100)
+    if isinstance(limit,str) and limit.isnumeric():
+        limit = int(limit)
+    last_id = request.GET.get("last_id",0)
+    if isinstance(last_id,str) and last_id.isnumeric():
+        last_id = int(last_id)
+    lecture = request.GET.get("lecture_id",None)
+    return ResponseHelper(QuestionServices().showQuestions(request.user,lecture,cast(int,limit),cast(int,last_id)))
 #------------------
 @require_POST
 @csrf_exempt

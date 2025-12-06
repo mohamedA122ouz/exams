@@ -1,0 +1,125 @@
+import json
+from questionHelper import AnsParserOutput
+import random
+
+MCQ = 0
+WRITTEN_QUETION = 1
+COMPLEX = 2
+
+def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
+    ansList:list[AnsParserOutput] = []
+    gForSIMICOLON:list[int] = random.sample(range(999999000,999999999),1)
+    _simiColon = f"{gForSIMICOLON[0]}"
+    examText = examText.replace("#;",_simiColon)
+    counter = 0
+    for question in examText.split(';'): # questions
+        generateNumber:list[int] = random.sample(range(97890900,97899999),4)
+        _tildaSign:str = f"^&*{generateNumber[0]}$%"
+        _atSign = f"^&*{generateNumber[1]}$%"
+        _randomClass = f"{generateNumber[2]}"
+        question = question.replace("#~",_tildaSign)
+        question = question.replace("#@",_atSign)
+        isMultiChoice = False
+        ansString:str = ""
+        haveMoreThanOneAns = False
+        choices:list[str] = []
+        HTMLText = ""
+        for _str in question.split('~'):
+            if '@' not in _str:
+                HTMLText += f"<p>{_str}</p>"
+            else:
+                if _str.strip().startswith('CHOICE@') and len(ansString) == 0:
+                    choices.append(_str.replace('CHOICE@',''))
+                elif _str.strip().startswith('CHOICE@') and len(ansString) != 0:
+                    raise Exception("Answer cannot be in the middle of choices it must be at the end")
+                elif 'http://' in _str or 'https://' in _str:# if it is a url
+                    if _str.strip().startswith('IMAGE@'):
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />"
+                    elif _str.strip().startswith('AUDIO@'):
+                        HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
+                    elif _str.strip().startswith('VIDEO@'):
+                        HTMLText += f"<video src='{_str.replace('VIDEO@','')}' />"
+                    elif _str.strip().startswith('YOUTUBE@'):
+                        _str = _str.replace('YOUTUBE@','')
+                        _str = _str.replace("https://youtu.be/","https://www.youtube.com/embed/")
+                        _str = _str.replace("https://www.youtube.com/","https://www.youtube.com/embed/")
+                        HTMLText += f"""<iframe width="560" height="315" src="{_str}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"""
+                #------------------
+                else:# if the attachment is uploaded to the server
+                    if 'IMAGE@' in _str:
+                        HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />"
+                    elif 'AUDIO@' in _str:
+                        HTMLText += f"<audio src='{_str.replace('AUDIO@','/static/')}' />"
+                    elif 'VIDEO@' in _str:
+                        HTMLText += f"<video src='{_str.replace('VIDEO@','/static/')}' />"
+                #------------------
+                if _str.strip().startswith("ANS@"):
+                    ansString = _str.replace("ANS@","")
+                    strArr = ansString.split(',')
+                    isMultiChoice = True
+                    for item in strArr:
+                        if not item.isnumeric():
+                            isMultiChoice = False
+                        elif item.isnumeric() and int(item) > len(choices):
+                            isMultiChoice = False
+                    #------------------
+                    if len(strArr) > 1 and isMultiChoice:
+                        haveMoreThanOneAns = True
+                #------------------
+            #------------------
+        #------------------
+        if haveMoreThanOneAns and isMultiChoice:
+            HTMLText += "<p>Choose one or more of the following choices</p>"
+            choices = [f"<div><input type='checkbox' value='{key}'>{choice}</div>" for key,choice in enumerate(choices)]
+        #------------------
+        elif not haveMoreThanOneAns and isMultiChoice:
+            HTMLText += "<p>Choose only one of the following choices</p>"
+            choices = [f"<div><input type='radio' value='{key}' name='{_randomClass}@ID{counter}'>{choice}</div>" for key,choice in enumerate(choices)]
+        #------------------
+        elif not isMultiChoice:
+            HTMLText += '<textarea placeholder="insert your answer here"></textarea>'
+        HTMLText += "".join(choices)
+        HTMLText = HTMLText.replace(_atSign,'@')
+        HTMLText = HTMLText.replace(_tildaSign,'~')
+        HTMLText = HTMLText.replace(_simiColon,';')
+        ansList.append({
+            'answers':ansString,
+            "questions":HTMLText,
+            'questionType': MCQ if isMultiChoice else WRITTEN_QUETION
+        })
+        counter += 1
+    #------------------
+    return ansList
+#------------------
+
+
+exam2 = """"
+How to travel to new York? (you are in Egypt)
+~CHOICE@by plane
+~CHOICE@by car
+~CHOICE@by bus
+~CHOICE@neculas rocket
+~ANS@3;
+Hello world!
+~CHOICE@A keyword
+~CHOICE@A regular string
+~CHOICE@A personal info
+~ANS@1;
+"""
+exam = """
+Hello How are?
+~CHOICE@fine, Thank you
+~CHOICE@fine, and how are you
+~CHOICE@I don't know life feels complicated these days
+~ANS@0,1,2;
+Hello world!
+~CHOICE@A keyword
+~CHOICE@A regular string
+~CHOICE@A personal info
+~ANS@1;
+Tell me what is the fast not very secure in terms of memory programming language and by the way doesn't support OOP?~ANS@C;
+How to save people form AI;
+ANS@12345678910~write from 1 to 10 like this 1....10 wihout any sperators between numbers
+"""
+
+print(json.dumps(ExamAndQuestionParser(exam2)))

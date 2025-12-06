@@ -10,6 +10,7 @@ class Year(models.Model):
     User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Years")
     Terms = models.Manager["Term"]
     Subjects = models.Manager["Subject"]
+#------------------
 
 class Term(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -17,6 +18,7 @@ class Term(models.Model):
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Terms")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Terms",null=True,default=None)
     Subjects = models.Manager["Subject"]
+#------------------
 
 class Subject(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -25,6 +27,7 @@ class Subject(models.Model):
     Term = models.ForeignKey(Term,on_delete=models.CASCADE,related_name="Subjects")
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
     Lectures = models.Manager["Lecture"]
+#------------------
 
 class Lecture(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -32,6 +35,7 @@ class Lecture(models.Model):
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Lectures")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Lectures",null=True,default=None)
     Questions = models.Manager["Question"]
+#------------------
 
 class Question(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -46,7 +50,7 @@ class Question(models.Model):
     IsInAnExam = models.BooleanField()
     soln = models.Manager["soln"]
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
-
+#------------------
 class Setting(models.Model):
     ID = models.AutoField(primary_key=True)
     ExamInterval = models.TimeField()
@@ -55,6 +59,7 @@ class Setting(models.Model):
     TrackSolutions = models.BooleanField(default=True)
     Public = models.BooleanField(default=False)
     AllowDownLoad = models.BooleanField(default=False)
+#------------------
 
 class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -62,8 +67,9 @@ class Exam(models.Model):
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
     Settings = models.ManyToManyField(Setting, through='ExamSetting')
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
+    classRooms:models.Manager["classRoom"]
     solns = models.Manager["soln"]
-
+#------------------
 class ExamSetting(models.Model):
     ID = models.AutoField(primary_key=True)
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
@@ -71,10 +77,19 @@ class ExamSetting(models.Model):
 
     class Meta:
         unique_together = ('Setting',) 
-
+#------------------
 
 class soln(models.Model):
     ID = models.AutoField(primary_key=True)
     Exam = models.ForeignKey(Exam,on_delete=models.CASCADE,related_name="Solns")
     Question = models.ForeignKey(Question,on_delete=models.CASCADE,related_name="Solns")
     User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
+#------------------
+class classRoom(models.Model):
+    ID = models.AutoField(primary_key=True)
+    Creator = models.ForeignKey(User,on_delete=models.CASCADE,related_name="classRoomsOwner",null=False)
+    Students = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="classRoomsMember",null=True)
+    Admin = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Admin",null=True)
+    attachments = models.FileField(upload_to="uploads/")
+    allowThirdPartySeen = models.BooleanField(default=False,null=False)
+#------------------

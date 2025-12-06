@@ -1,6 +1,7 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 class AnsParserOutput(TypedDict):
-    answers:list[int]
-    questions:list[str]
+    answers:str
+    questions:str
+    questionType:Literal[0,1,2]
 #------------------

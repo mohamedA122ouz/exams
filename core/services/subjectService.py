@@ -5,11 +5,11 @@ from core.services.utils.userHelper import IUserHelper
 
 
 class SubjectService:
-    def showSubjects(self,user)->dict[str,str]|list[dict[str,Any]]: 
+    def showSubjects(self,user,limit:int=100,last_id:int=0)->dict[str,str]|list[dict[str,Any]]: 
         user = cast(IUserHelper,user)
         if not user:
             return {"subjects":"required login"}
-        subjects = user.Subjects.values()
+        subjects = user.Subjects.filter(ID__gt=last_id)[:limit].values()
         return list(subjects)
     #------------------
     def createSubject(self,user,year_id:Optional[int|str],term_id:Optional[str|int],name:Optional[str]):

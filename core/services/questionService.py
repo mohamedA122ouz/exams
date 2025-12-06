@@ -1,9 +1,7 @@
 from typing import Any, Optional, cast
 
 from core.models.Exams_models import Lecture, Question
-from core.services.utils.questionHelper import AnsParserOutput
 from core.services.utils.userHelper import IUserHelper
-import random
 
 
 
@@ -11,65 +9,12 @@ class QuestionServices:
     MCQ = 0
     WRITTEN_QUETION = 1
     COMPLEX = 2
-    def _parser_text_url(self,question:Question)->str:
-        text:str = question.Text_Url
-        generateNumber:list[int] = random.sample(range(97890900,97899999),3)
-        _tildaSign:str = f"^&*{generateNumber[0]}$%"
-        _atSign = f"^&*{generateNumber[1]}$%"
-        _randomClass = f"{generateNumber[2]}"
-        text = text.replace("#~",_tildaSign)
-        text = text.replace("#@",_atSign)
-        choices:list[str] = []
-        HTMLText = ""
-        for _str in text.split('~'):
-            if '@' not in _str:
-                HTMLText += f"<p>{_str}</p>"
-            else:
-                if 'CHOICE@' in _str and question.Type == self.MCQ:
-                    choices.append(_str.replace('CHOICE@',''))
-                elif 'http://' in _str or 'https://' in _str:# if it is a url
-                    if 'IMAGE@' in _str:
-                        HTMLText += f"<img src='{_str.replace('IMAGE@','')}' alt='question Image attachment' />"
-                    elif 'AUDIO@' in _str:
-                        HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
-                    elif 'VIDEO@' in _str:
-                        HTMLText += f"<video src='{_str.replace('VIDEO@','')}' />"
-                    elif 'YOUTUBE@' in _str:
-                        _str = _str.replace('YOUTUBE@','')
-                        _str = _str.replace("https://youtu.be/","https://www.youtube.com/embed/")
-                        _str = _str.replace("https://www.youtube.com/","https://www.youtube.com/embed/")
-                        HTMLText += f"""<iframe width="560" height="315" src="{_str}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"""
-                #------------------
-                else:# if the attachment is uploaded to the server
-                    if 'IMAGE@' in _str:
-                        HTMLText += f"<img src='{_str.replace('IMAGE@','/static/')} alt='question Image attachment' />"
-                    elif 'AUDIO@' in _str:
-                        HTMLText += f"<audio src='{_str.replace('AUDIO@','/static/')}' />"
-                    elif 'VIDEO@' in _str:
-                        HTMLText += f"<video src='{_str.replace('VIDEO@','/static/')}' />"
-                #------------------
-            #------------------
-        #------------------
-        if ',' in cast(str,question.Ans) and question.Type == self.MCQ:
-            HTMLText += "<p>Choose one or more of the following choices</p>"
-            choices = [f"<div><input type='checkbox' value='{key}'>{choice}</div>" for key,choice in enumerate(choices)]
-        #------------------
-        elif question.Type == self.MCQ:
-            HTMLText += "<p>Choose only one of the following choices</p>"
-            choices = [f"<div><input type='radio' value='{key}' name='{_randomClass+str(question.ID)}'>{choice}</div>" for key,choice in enumerate(choices)]
-        #------------------
-        elif question.Type == self.WRITTEN_QUETION:
-            HTMLText += '<textarea placeholder="insert your answer here"></textarea>'
-        HTMLText += "".join(choices)
-        HTMLText = HTMLText.replace(_atSign,'@')
-        HTMLText = HTMLText.replace(_tildaSign,'~')
-        return HTMLText
-    #------------------
-    def showQuestions(self,user,lecture)->list[dict[str,Any]]|dict[str,str]:
+    
+    def showQuestions(self,user,lecture_id:Optional[int|str],limit:int=100,last_id:int=0)->list[dict[str,Any]]|dict[str,str]:
         user = cast(IUserHelper,user)
-        if not lecture:
-            return {"lecture":"cannot be null"}
-        questions = user.Questions.filter(lecture__ID=lecture).values()
+        if not lecture_id:
+            return {"lecture_id":"cannot be null"}
+        questions = user.Questions.filter(lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
         return list(questions)
     #------------------
     def createQuestion(self,user,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
@@ -139,4 +84,5 @@ class QuestionServices:
         if len(items) != qNum:
             return {"fail":"questions list faild to be created"}
         return {"success":"questions list created successfully"}
+    #------------------
 #------------------CLASS_ENDED#------------------
