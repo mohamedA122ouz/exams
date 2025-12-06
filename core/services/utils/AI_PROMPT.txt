@@ -1,0 +1,4 @@
+look this is the model answer and tell me if the question is correct or not
+model answer: "<MODEL-ANSWER>" 
+student answer: "<STUDENT-ANSWER>"
+use only the model answer forget about the question and also TELL ME YES/NO nothing else but if the answer have the same meaning of the model answer it is correct then
