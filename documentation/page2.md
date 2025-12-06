@@ -1,4 +1,4 @@
-<!-- # **Question Parser Specification – Full Technical Documentation**
+# **Question Parser Specification – Full Technical Documentation**
 
 **Version:** 1.0  
 **Author:** Mohamed  
@@ -18,7 +18,7 @@ This document describes the syntax and rules for the **Custom Question Markup La
 * Escape sequences to prevent syntax conflicts
 
 CQML allows users to create highly flexible question structures using a lightweight text grammar.
-This grammar is designed to be parsed by a deterministic parser that converts CQML into a HTML TEXT.
+This grammar is designed to be parsed by a deterministic parser that converts CQML into an HTML TEXT.
 
 ---
 
@@ -27,8 +27,8 @@ This grammar is designed to be parsed by a deterministic parser that converts CQ
 CQML uses a combination of:
 
 * **Tilde separators (`~`)**
-* **Attachment tokens (`TYPE@VALUE`)**
-* **Choice tokens (`CHOICE@text`)**
+* **Attachment tokens (`<TYPE>@<VALUE>`)**
+* **Choice tokens (`CHOICE@<VALUE>`)**
 * **Escape sequences (`#@`, `#~`)**
 
 This creates a compact, safe, and predictable grammar.
@@ -66,12 +66,12 @@ What do you see?
 Attachments follow the format:
 
 ```
-TYPE@VALUE
+<TYPE>@<VALUE>
 ```
 
 ### **Supported Attachment Types**
 
-| Type    | Meaning                             | Example                            |
+| <TYPE>    | Meaning                             | Example                            |
 | ------- | ----------------------------------- | ---------------------------------- |
 | `IMAGE` | Image file / URL                    | `IMAGE@https://img.com/a.png`      |
 | `AUDIO` | Audio clip                          | `AUDIO@https://site.com/sound.mp3` |
@@ -86,7 +86,7 @@ CQML allows questions and attachments to be arranged flexibly:
 
 ```
 What is shown in this image?
-~IMAGE@https://site.com/pic.jpg
+~IMAGE@https://hips.hearstapps.com/hmg-prod/images/sacred-birma-cat-in-interior-royalty-free-image-1718202855.jpg?crop=0.672xw:1.00xh;0.163xw,0
 ~
 Explain.
 ```
@@ -94,7 +94,7 @@ Explain.
 #### **Attachment before question**
 
 ```
-IMAGE@https://site.com/pic.jpg
+IMAGE@https://hips.hearstapps.com/hmg-prod/images/sacred-birma-cat-in-interior-royalty-free-image-1718202855.jpg?crop=0.672xw:1.00xh;0.163xw,0
 ~What is shown in this image?
 ```
 
@@ -117,7 +117,7 @@ Look at the following:
 Each choice is written as:
 
 ```
-CHOICE@<text>
+CHOICE@<TEXT>
 ```
 
 Example:
@@ -337,4 +337,3 @@ Or more compact:
 * **AI-assisted distractor generation**
 * **Styling markup (bold/italic)**
 
--->

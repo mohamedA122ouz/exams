@@ -195,6 +195,7 @@ OR
 
 | what happen   | status | json |
 |---------------|--------|------|
+| server error  | `200`  | `{"success":"subject created"}` |
 | wrong field   | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"faild term is not exist"}` <br> `{"creation":"faild year is not exist"}` |
 | server error  | `500`  | `{"fail":"faild no reason specified"}` |
 
@@ -275,6 +276,7 @@ OR
 ```
 
 - Response Details
+
 | what happen   | status | json |
 |---------------|--------|------|
 | success       | `200`  | `{"success":"successful"}` |

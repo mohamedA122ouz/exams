@@ -4,40 +4,7 @@ from core.models.Exams_models import Lecture, Question
 from core.services.utils.questionHelper import AnsParserOutput
 from core.services.utils.userHelper import IUserHelper
 import random
-"""
-A parser need to be implemented here so the question could be more complicated
-> allow include attachments:Image,Audio,Video,URL-> for youtube or other
-> allow changing the orientaion of the question and the attachments allowing the question to on top or vice versa
-> for choose question allow the computer understand the correct question and generate the choices from the ans
 
-------SMALL EXAMLE OF WHAT THE TEXT SHOULD LOOK LIKE------
-EXAMPLE:"look at the question and ans~IMAGE@NAME|URL~what do you found interesting in this image?"
-DESCRIPTION: question followed by the image then other question
-
-question
-------IMAGE------
-question_continue
-
-
-PROBLEM:Must a void using @ in the regular question or made up a replacer in regular text like #@ and #~;
-
-solution: generate a sequence of number and special chars but just a random sequence and replace #@ then after replacing all @ then restore replace the random sequence with @
-so lets say that the question have the following text
-
-> "hello#~ are you there~IMAGE@https://test.com/image~what is the name of thie sign '#@'"
-parse should do the following:
-1. generate number Sequenece like 78$451%88
-2. save it like _tilda = $78451%
-3. replace all #~ with the sequenence
-4. process all ~ signs as intended
-5. replace the random sequence store within the var _tilda with the ~ sign
-samething as ~ with @
-"""
-"""
-the problem is that the choices is a part of not answer
-okay now the problem I need to find out more realistic way to implement choices
-
-"""
 
 
 class QuestionServices:
@@ -67,6 +34,11 @@ class QuestionServices:
                         HTMLText += f"<audio src='{_str.replace('AUDIO@','')}' />"
                     elif 'VIDEO@' in _str:
                         HTMLText += f"<video src='{_str.replace('VIDEO@','')}' />"
+                    elif 'YOUTUBE@' in _str:
+                        _str = _str.replace('YOUTUBE@','')
+                        _str = _str.replace("https://youtu.be/","https://www.youtube.com/embed/")
+                        _str = _str.replace("https://www.youtube.com/","https://www.youtube.com/embed/")
+                        HTMLText += f"""<iframe width="560" height="315" src="{_str}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"""
                 #------------------
                 else:# if the attachment is uploaded to the server
                     if 'IMAGE@' in _str:
@@ -78,10 +50,16 @@ class QuestionServices:
                 #------------------
             #------------------
         #------------------
-        if ',' in cast(str,question.Ans):
+        if ',' in cast(str,question.Ans) and question.Type == self.MCQ:
+            HTMLText += "<p>Choose one or more of the following choices</p>"
             choices = [f"<div><input type='checkbox' value='{key}'>{choice}</div>" for key,choice in enumerate(choices)]
-        else:
+        #------------------
+        elif question.Type == self.MCQ:
+            HTMLText += "<p>Choose only one of the following choices</p>"
             choices = [f"<div><input type='radio' value='{key}' name='{_randomClass+str(question.ID)}'>{choice}</div>" for key,choice in enumerate(choices)]
+        #------------------
+        elif question.Type == self.WRITTEN_QUETION:
+            HTMLText += '<textarea placeholder="insert your answer here"></textarea>'
         HTMLText += "".join(choices)
         HTMLText = HTMLText.replace(_atSign,'@')
         HTMLText = HTMLText.replace(_tildaSign,'~')
