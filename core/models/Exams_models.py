@@ -1,3 +1,4 @@
+from random import choice
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -43,11 +44,16 @@ class Question(models.Model):
         CHOOSE = 0, "Choose"
         WRITTEN = 1, "Written"
         COMPLEX = 2, "Complex"
+    class QEase(models.IntegerChoices):
+        Easy = 0, "Easy"
+        Medium = 1, "Medium"
+        Hard = 2, "Hard"
     Text_Url = models.CharField(max_length=400)
     Type = models.IntegerField(choices=QType.choices, default=QType.CHOOSE)
     Ans = models.CharField(max_length=400)
     lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
     IsInAnExam = models.BooleanField()
+    Ease = models.IntegerField(choices=QEase.choices,default=QEase.Easy)
     soln = models.Manager["soln"]
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
 #------------------

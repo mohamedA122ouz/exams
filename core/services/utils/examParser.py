@@ -1,5 +1,5 @@
 import json
-from questionHelper import AnsParserOutput
+from questionHelper import AnsParserOutput, ExamAutoGenerator, ExamSetting, QuestionEase
 import random
 
 MCQ = 0
@@ -91,35 +91,28 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
     #------------------
     return ansList
 #------------------
-
-
-exam2 = """"
-How to travel to new York? (you are in Egypt)
-~CHOICE@by plane
-~CHOICE@by car
-~CHOICE@by bus
-~CHOICE@neculas rocket
-~ANS@3;
-Hello world!
-~CHOICE@A keyword
-~CHOICE@A regular string
-~CHOICE@A personal info
-~ANS@1;
-"""
-exam = """
-Hello How are?
-~CHOICE@fine, Thank you
-~CHOICE@fine, and how are you
-~CHOICE@I don't know life feels complicated these days
-~ANS@0,1,2;
-Hello world!
-~CHOICE@A keyword
-~CHOICE@A regular string
-~CHOICE@A personal info
-~ANS@1;
-Tell me what is the fast not very secure in terms of memory programming language and by the way doesn't support OOP?~ANS@C;
-How to save people form AI;
-ANS@12345678910~write from 1 to 10 like this 1....10 wihout any sperators between numbers
-"""
-
-print(json.dumps(ExamAndQuestionParser(exam2)))
+def autoGeneratorParser(examJson:str)->None:#this should build exam but not it is just checker if all things work
+    examAGDict:ExamAutoGenerator = json.loads(examJson)
+    if not "generatorSettings" in examAGDict:
+        raise "generator setting not exist"
+    if not "questions" in examAGDict:
+        raise "exam questions doesn't exist"
+    examSettings:ExamSetting = examAGDict['generatorSettings']
+    if not "yearName" in examSettings:
+        raise "year name doesn't exist"
+    if not "termName" in examSettings:
+        raise "term name doesn't exist"
+    if not "lectureName" in examSettings:
+        raise "lecture name doesn't exist"
+    if not "randomization" in examSettings:
+        raise "randomization settings doesn't exist"
+    examQuestions:list[QuestionEase] = examAGDict['questions']
+    if not isinstance(examQuestions,list):
+        raise "exam questions is not in list"
+    for question in examQuestions:
+        if not "count" in question:
+            raise Exception("question ease doesn't have a count")
+        if not "ease" in question:
+            raise Exception("ease level is not exist")
+    #------------------
+#------------------
