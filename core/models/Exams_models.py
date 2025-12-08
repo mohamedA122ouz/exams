@@ -9,8 +9,8 @@ class Year(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
     User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Years")
-    Terms = models.Manager["Term"]
-    Subjects = models.Manager["Subject"]
+    Terms : models.Manager["Term"]
+    Subjects : models.Manager["Subject"]
 #------------------
 
 class Term(models.Model):
@@ -18,7 +18,7 @@ class Term(models.Model):
     Name = models.CharField(max_length=50)
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Terms")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Terms",null=True,default=None)
-    Subjects = models.Manager["Subject"]
+    Subjects : models.Manager["Subject"]
 #------------------
 
 class Subject(models.Model):
@@ -27,7 +27,7 @@ class Subject(models.Model):
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Subjects",null=True,default=None)
     Term = models.ForeignKey(Term,on_delete=models.CASCADE,related_name="Subjects")
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
-    Lectures = models.Manager["Lecture"]
+    Lectures : models.Manager["Lecture"]
 #------------------
 
 class Lecture(models.Model):
@@ -35,7 +35,7 @@ class Lecture(models.Model):
     Name = models.CharField(max_length=50)
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Lectures")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Lectures",null=True,default=None)
-    Questions = models.Manager["Question"]
+    Questions : models.Manager["Question"]
 #------------------
 
 class Question(models.Model):
@@ -54,8 +54,9 @@ class Question(models.Model):
     lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
     IsInAnExam = models.BooleanField()
     Ease = models.IntegerField(choices=QEase.choices,default=QEase.Easy)
-    soln = models.Manager["soln"]
+    soln:models.Manager["soln"]
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
+    Exams:models.Manager["Exam"] # only owner should see this else shouldn't see
 #------------------
 class Setting(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -73,8 +74,14 @@ class Exam(models.Model):
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
     Settings = models.ManyToManyField(Setting, through='ExamSetting')
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
+    Questions = models.ManyToManyField("Question", through="ExamQuestion", related_name="Exams")
     classRooms:models.Manager["classRoom"]
-    solns = models.Manager["soln"]
+    solns : models.Manager["soln"]
+#------------------
+class ExamQuestion(models.Model):
+    Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    Question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    Order = models.IntegerField(default=0)
 #------------------
 class ExamSetting(models.Model):
     ID = models.AutoField(primary_key=True)

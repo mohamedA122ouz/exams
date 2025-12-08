@@ -7,7 +7,9 @@ from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
+from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
+from core.services.utils.questionHelper import ExamAutoGenerator
 from core.services.yearServices import YearService
 
 #level one
@@ -92,3 +94,9 @@ def createQuestions(request:HttpRequest)->JsonResponse:
     lectureIDs:Optional[list[str]] = body.get("lecture_ids",None)
     return ResponseHelper(QuestionServices().createQuestions(request.user,questionsNum,Text_Url,Type,Ans,lectureIDs))
 #------------------
+@require_POST
+@csrf_exempt
+def autoGenerateExam(request:HttpRequest)->JsonResponse:
+    body:ExamAutoGenerator = json.loads(request.body)
+    exam = autoGeneratorParser(body)
+    return exam

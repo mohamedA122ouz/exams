@@ -1,11 +1,17 @@
 import json
-from questionHelper import AnsParserOutput, ExamAutoGenerator, ExamSetting, QuestionEase
+from typing import Any, Union, cast
+
+from django.forms import model_to_dict
+from core.models.Exams_models import Subject
+from .questionHelper import AnsParserOutput, ExamAutoGenerator, ExamSetting, QuestionEase
 import random
 
 MCQ = 0
 WRITTEN_QUETION = 1
 COMPLEX = 2
-
+EASY = 0
+MEDIUM = 1
+HARD = 2
 def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
     ansList:list[AnsParserOutput] = []
     gForSIMICOLON:list[int] = random.sample(range(999999000,999999999),1)
@@ -91,8 +97,12 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
     #------------------
     return ansList
 #------------------
-def autoGeneratorParser(examJson:str)->None:#this should build exam but not it is just checker if all things work
-    examAGDict:ExamAutoGenerator = json.loads(examJson)
+def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator])->Any:#this should build exam but not it is just checker if all things work
+    examAGDict:ExamAutoGenerator = cast(ExamAutoGenerator,{})
+    if isinstance(examJson,str):
+        examJson = json.loads(examJson)
+    else:
+        examAGDict = examJson
     if not "generatorSettings" in examAGDict:
         raise "generator setting not exist"
     if not "questions" in examAGDict:
@@ -100,6 +110,8 @@ def autoGeneratorParser(examJson:str)->None:#this should build exam but not it i
     examSettings:ExamSetting = examAGDict['generatorSettings']
     if not "yearName" in examSettings:
         raise "year name doesn't exist"
+    if not "subjectName" in examSettings:
+        raise "subject name doesn't exist"
     if not "termName" in examSettings:
         raise "term name doesn't exist"
     if not "lectureName" in examSettings:
@@ -109,10 +121,29 @@ def autoGeneratorParser(examJson:str)->None:#this should build exam but not it i
     examQuestions:list[QuestionEase] = examAGDict['questions']
     if not isinstance(examQuestions,list):
         raise "exam questions is not in list"
+    subject = Subject.objects.filter(Name=examSettings['subjectName'],Term__Name=examSettings['termName'],Year__Name=examSettings['yearName']).first()
+    if not subject:
+        raise Exception(f"cannot find subject: {examSettings} in year:{examSettings['yearName']} and term:{examSettings['termName']}")
+    lecture = subject.Lectures.filter(Name=examSettings['lectureName']).first()
+    if not lecture:
+        raise Exception(f"lecture:{lecture} is not exist")
+    easyQuestions = lecture.Questions.filter(Ease=EASY)
+    mediumQuestions = lecture.Questions.filter(Ease=MEDIUM)
+    hardQuestions = lecture.Questions.filter(Ease=HARD)
+    exam = []
     for question in examQuestions:
         if not "count" in question:
             raise Exception("question ease doesn't have a count")
         if not "ease" in question:
             raise Exception("ease level is not exist")
+        if question["ease"] == EASY:
+            exam+=easyQuestions[:question['count']]
+        elif question['ease'] == MEDIUM:
+            exam+=mediumQuestions[:question['count']]
+        elif question['ease'] == HARD:
+            exam+=hardQuestions[:question['count']]
     #------------------
+    serialized_exam = [model_to_dict(q) for q in exam]
+    print(serialized_exam)
+    return serialized_exam
 #------------------

@@ -6,6 +6,7 @@ class AnsParserOutput(TypedDict):
     questionType:Literal[0,1,2]
 #------------------
 class ExamSetting(TypedDict):
+    subjectName:str
     yearName:str
     termName:str
     lectureName:str

@@ -21,4 +21,6 @@ urlpatterns = [
     path('questions',View.showQuestions,name="showQuestions"),
     path('question/create',View.createQuestion,name="createQuestion"),
     path('questions/create',View.createQuestions,name="createQuestions"),
+    
+    path('test',View.test,name="test"),
 ]

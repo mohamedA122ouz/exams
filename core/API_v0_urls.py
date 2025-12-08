@@ -19,4 +19,6 @@ urlpatterns = [
     path('questions',API_v0.showQuestions,name="API_v0_showQuestions"),
     path('question/create',API_v0.createQuestion,name="API_v0_createQuestion"),
     path('questions/create',API_v0.createQuestions,name="API_v0_createQuestions"),
+    path('exams/create/parse',API_v0.createQuestions,name="createQuestions"),
+    path('exams/create/auto',API_v0.createQuestions,name="createQuestions"),
 ]

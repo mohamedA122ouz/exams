@@ -8,7 +8,9 @@ from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
 from core.services.utils import userHelper
+from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
+from core.services.utils.questionHelper import ExamAutoGenerator
 from core.services.utils.viewResponseHelper import HTMLResponse
 from core.services.yearServices import YearService
 
@@ -115,4 +117,27 @@ def createQuestions(request:HttpRequest)->JsonResponse:
     Ans:Optional[list[str]] = request.POST.getlist("ans[]",None)
     lectureIDs:Optional[list[str]] = request.POST.getlist("lecture_id[]",None)
     return ResponseHelper(QuestionServices().createQuestions(request.user,questionsNum,Text_Url,Type,Ans,lectureIDs))
+#------------------
+
+
+
+@require_GET
+@csrf_exempt
+def test(request:HttpRequest)->JsonResponse:
+    examStructure:ExamAutoGenerator = {
+            'generatorSettings':{
+                "lectureName":"lec1",
+                'subjectName':"advanced OOP1",
+                'randomization':True,
+                'termName':'term1',
+                'yearName':'Year1'
+            },
+            'questions':[
+                {'count':2,'ease':0},
+                {'count':2,'ease':1},
+                {'count':2,'ease':2},
+            ]
+        }
+    exam = autoGeneratorParser(examStructure)
+    return JsonResponse(exam,safe=False)
 #------------------
