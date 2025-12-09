@@ -3,6 +3,7 @@ from typing import Any, Union, cast
 
 from django.forms import model_to_dict
 from core.models.Exams_models import Subject
+from core.services.utils.userHelper import IUserHelper
 from .questionHelper import AnsParserOutput, ExamAutoGenerator, ExamSetting, QuestionEase
 import random
 
@@ -30,6 +31,7 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
         haveMoreThanOneAns = False
         choices:list[str] = []
         HTMLText = ""
+        questionEase = EASY
         for _str in question.split('~'):
             if '@' not in _str:
                 HTMLText += f"<p>{_str}</p>"
@@ -72,6 +74,14 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
                     if len(strArr) > 1 and isMultiChoice:
                         haveMoreThanOneAns = True
                 #------------------
+                if _str.strip().startswith("EASE@"):
+                    ease = _str.replace("EASE@","")
+                    if not ease.isnumeric():
+                        raise Exception("ease cannot be string it must be a number")
+                    easeAsInt = int(ease)
+                    if easeAsInt > HARD:
+                        raise Exception("ease cannot be more than 2 which means HARD")
+                    questionEase = easeAsInt
             #------------------
         #------------------
         if haveMoreThanOneAns and isMultiChoice:
@@ -90,14 +100,15 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
         HTMLText = HTMLText.replace(_simiColon,';')
         ansList.append({
             'answers':ansString,
-            "questions":HTMLText,
-            'questionType': MCQ if isMultiChoice else WRITTEN_QUETION
+            "question":HTMLText,
+            'questionType': MCQ if isMultiChoice else WRITTEN_QUETION,
+            'ease':questionEase
         })
         counter += 1
     #------------------
     return ansList
 #------------------
-def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator])->Any:#this should build exam but not it is just checker if all things work
+def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->Any:#this should build exam but not it is just checker if all things work
     examAGDict:ExamAutoGenerator = cast(ExamAutoGenerator,{})
     if isinstance(examJson,str):
         examJson = json.loads(examJson)
@@ -121,7 +132,7 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator])->Any:#this should
     examQuestions:list[QuestionEase] = examAGDict['questions']
     if not isinstance(examQuestions,list):
         raise "exam questions is not in list"
-    subject = Subject.objects.filter(Name=examSettings['subjectName'],Term__Name=examSettings['termName'],Year__Name=examSettings['yearName']).first()
+    subject = user.Subjects.filter(Name=examSettings['subjectName'],Term__Name=examSettings['termName'],Year__Name=examSettings['yearName']).first()
     if not subject:
         raise Exception(f"cannot find subject: {examSettings} in year:{examSettings['yearName']} and term:{examSettings['termName']}")
     lecture = subject.Lectures.filter(Name=examSettings['lectureName']).first()
@@ -144,6 +155,8 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator])->Any:#this should
             exam+=hardQuestions[:question['count']]
     #------------------
     serialized_exam = [model_to_dict(q) for q in exam]
+    if examSettings['randomization']:
+        random.shuffle(serialized_exam)
     print(serialized_exam)
     return serialized_exam
 #------------------

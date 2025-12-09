@@ -72,24 +72,16 @@ class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
     IsScheduled = models.BooleanField()
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
-    Settings = models.ManyToManyField(Setting, through='ExamSetting')
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
     Questions = models.ManyToManyField("Question", through="ExamQuestion", related_name="Exams")
+    Settings = models.ForeignKey(Setting, on_delete=models.CASCADE)
     classRooms:models.Manager["classRoom"]
-    solns : models.Manager["soln"]
+    solns:models.Manager["soln"]
 #------------------
 class ExamQuestion(models.Model):
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     Question = models.ForeignKey(Question, on_delete=models.CASCADE)
     Order = models.IntegerField(default=0)
-#------------------
-class ExamSetting(models.Model):
-    ID = models.AutoField(primary_key=True)
-    Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
-    Setting = models.ForeignKey(Setting, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('Setting',) 
 #------------------
 
 class soln(models.Model):

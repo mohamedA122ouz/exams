@@ -1,6 +1,7 @@
 from typing import Any, Optional, cast
 
 from core.models.Exams_models import Lecture, Question
+from core.services.utils.examParser import ExamAndQuestionParser
 from core.services.utils.userHelper import IUserHelper
 
 
@@ -9,17 +10,7 @@ class QuestionServices:
     MCQ = 0
     WRITTEN_QUETION = 1
     COMPLEX = 2
-    
-    def showQuestions(self,user,lecture_id:Optional[int|str],limit:int=100,last_id:int=0)->list[dict[str,Any]]|dict[str,str]:
-        user = cast(IUserHelper,user)
-        if not lecture_id:
-            return {"lecture_id":"cannot be null"}
-        questions = user.Questions.filter(lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
-        return list(questions)
-    #------------------
-    def createQuestion(self,user,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
-        user = cast(IUserHelper,user)
-        #text_url is the url of the image on the server
+    def _handleChecking(self,user,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
         if not text_url:
             return {"text_url":"cannot be null"}
         if not type:
@@ -28,6 +19,51 @@ class QuestionServices:
             return {"ans":"cannot be null"}
         if not lecture_id:
             return {"lecture_id":"cannot be null"}
+        else:
+            return {"success":"nothing wrong"}
+    #------------------
+    def showQuestions(self,user,lecture_id:Optional[int|str],limit:int=100,last_id:int=0)->list[dict[str,Any]]|dict[str,str]:
+        user = cast(IUserHelper,user)
+        if not lecture_id:
+            return {"lecture_id":"cannot be null"}
+        questions = user.Questions.filter(lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
+        return list(questions)
+    #------------------
+    def createQuestionFromLang(self,user,text_url:Optional[str],ans:Optional[str],lecture_id:Optional[str]):
+        user = cast(IUserHelper,user)
+        checkingResult = self._handleChecking(user,text_url,"placeHolder",ans,lecture_id)
+        if not "success" in checkingResult:
+            return checkingResult
+        lecture = user.Lectures.filter(ID=lecture_id).first()
+        if not lecture:
+            return {"lecture":"lecture not found"}
+        parseResult = ExamAndQuestionParser(text_url)#type:ignore
+        # user.Exams.create(
+        #     IsScheduled=False,
+        #     Subject=subject,
+        #     Questions=,
+        #     Settings=,
+        #     classRooms=,
+        #     solns=,
+        # )
+        #exam need to be created to continue
+        quesitons = [Question(
+            Text_Url=result["question"],
+            Type=result["questionType"],
+            Ans=result["answers"],
+            IsInAnExam = False,
+            soln=None,
+            lecture=lecture,
+            Ease=result["ease"]
+        ) for result in parseResult]
+        user.Questions.bulk_create(quesitons)
+    #------------------
+    def createQuestion(self,user,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
+        user = cast(IUserHelper,user)
+        #text_url is the url of the image on the server
+        checkingResult = self._handleChecking(user,text_url,type,ans,lecture_id)
+        if not "success" in checkingResult:
+            return checkingResult
         lecture = user.Lectures.filter(ID=lecture_id).first()
         if not lecture:
             return {"lecture":"lecture not found"}
@@ -40,7 +76,7 @@ class QuestionServices:
         #------------------
         q = user.Questions.create(
             Text_Url=text_url,
-            Type=int(type),
+            Type=int(type),#type:ignore already checked in _handleChecking
             Ans=ans,
             IsInAnExam = False,
             soln=None,

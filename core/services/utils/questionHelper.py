@@ -2,8 +2,9 @@ from typing import Literal, TypedDict
 
 class AnsParserOutput(TypedDict):
     answers:str
-    questions:str
+    question:str
     questionType:Literal[0,1,2]
+    ease:int
 #------------------
 class ExamSetting(TypedDict):
     subjectName:str
