@@ -6,6 +6,7 @@ from core.models.Exams_models import Exam, Subject
 from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
+import json
 
 from core.services.utils.jsonResponseHelper import ResponseHelper
 
@@ -66,8 +67,10 @@ def userloginPage(request:HttpRequest):
 @require_POST
 @csrf_exempt
 def userLogin(request:HttpRequest):
-    username = request.POST.get("username",None)
-    password = request.POST.get("password",None)
+    body = json.loads(request.body.decode("utf-8"))
+    username = body.get("username")
+    password = body.get("password")
+    
     if username == None:
         return ResponseHelper({"username":"is null"})
     if password == None:
