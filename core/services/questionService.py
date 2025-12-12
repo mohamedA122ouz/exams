@@ -2,7 +2,7 @@ from typing import Any, Optional, cast
 
 from core.models.Exams_models import Lecture, Question
 from core.services.utils.examParser import ExamAndQuestionParser
-from core.services.utils.userHelper import IUserHelper
+from core.services.types.userType import IUserHelper
 
 
 

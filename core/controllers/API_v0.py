@@ -9,7 +9,7 @@ from core.services.subjectService import SubjectService
 from core.services.termService import TermService
 from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
-from core.services.utils.questionHelper import ExamAutoGenerator
+from core.services.types.questionType import ExamAutoGenerator
 from core.services.yearServices import YearService
 
 #level one

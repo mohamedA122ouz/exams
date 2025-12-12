@@ -1,5 +1,5 @@
 from typing import Any, Optional, cast
-from core.services.utils.userHelper import IUserHelper
+from core.services.types.userType import IUserHelper
 
 
 class YearService:

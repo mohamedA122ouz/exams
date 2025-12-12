@@ -1,6 +1,7 @@
 from random import choice
 from django.db import models
 from django.contrib.auth.models import User
+from core.services.types.questionType import QuestionEase, QuestionType
 
 
 
@@ -40,20 +41,12 @@ class Lecture(models.Model):
 
 class Question(models.Model):
     ID = models.AutoField(primary_key=True)
-    class QType(models.IntegerChoices):
-        CHOOSE = 0, "Choose"
-        WRITTEN = 1, "Written"
-        COMPLEX = 2, "Complex"
-    class QEase(models.IntegerChoices):
-        Easy = 0, "Easy"
-        Medium = 1, "Medium"
-        Hard = 2, "Hard"
     Text_Url = models.CharField(max_length=400)
-    Type = models.IntegerField(choices=QType.choices, default=QType.CHOOSE)
+    Type = models.IntegerField(choices=QuestionType.choices(), default=QuestionType.MCQ_ONE_ANS)
     Ans = models.CharField(max_length=400)
     lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
     IsInAnExam = models.BooleanField()
-    Ease = models.IntegerField(choices=QEase.choices,default=QEase.Easy)
+    Ease = models.IntegerField(choices=QuestionEase.choices(),default=QuestionEase.EASY)
     soln:models.Manager["soln"]
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
     Exams:models.Manager["Exam"] # only owner should see this else shouldn't see
