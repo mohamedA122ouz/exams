@@ -20,19 +20,28 @@ class QuestionEase(IntEnum):
     def choices(cls) -> list[tuple[int, str]]:
         return [(e.value, e.name) for e in cls]
 #------------------
-class AnsParserOutput(TypedDict):
+class ShareWithEnum(IntEnum):
+    CLASSROOM = 0
+    ANY_ONE_WITH_LINK = 1
+    PRIVATE = 2
+    @classmethod
+    def choices(cls) -> list[tuple[int, str]]:
+        return [(e.value, e.name) for e in cls]
+#------------------
+class QparserOutput(TypedDict):
     answers:str
-    question:str
+    question:str # Exam with $ATTACHMENT_INDEX
     questionType:int|QuestionType
     ease:int
     choices:Optional[list[str]]
     attachments:Optional[list[Attachments]]
+    lecture_id:int
 #------------------
 class ExamSetting(TypedDict):
     subjectName:str
     yearName:str
     termName:str
-    lectureName:str
+    lectureName:Optional[str]
     randomization:bool
 #------------------
 class QuestionSelector(TypedDict):
@@ -42,4 +51,11 @@ class QuestionSelector(TypedDict):
 class ExamAutoGenerator(TypedDict):
     generatorSettings:ExamSetting
     questions:list[QuestionSelector]
+#------------------
+class reverseParserOutput(TypedDict):
+    question:str # Exam within Exam language
+    ans:str
+    type:int|QuestionType
+    ease:int|QuestionEase
+    lecture_id:int
 #------------------

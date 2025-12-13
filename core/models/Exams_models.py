@@ -1,10 +1,14 @@
+from datetime import datetime
 from random import choice
 from django.db import models
 from django.contrib.auth.models import User
-from core.services.types.questionType import QuestionEase, QuestionType
+from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
 
 
-
+class ProfileSettings(models.Model):
+    ID = models.AutoField(primary_key=True)
+    PreferedLang = models.TextField(default='en',null=False)
+    User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="ProfileSettings")
 
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -13,7 +17,6 @@ class Year(models.Model):
     Terms : models.Manager["Term"]
     Subjects : models.Manager["Subject"]
 #------------------
-
 class Term(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
@@ -21,7 +24,6 @@ class Term(models.Model):
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Terms",null=True,default=None)
     Subjects : models.Manager["Subject"]
 #------------------
-
 class Subject(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
@@ -30,7 +32,6 @@ class Subject(models.Model):
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
     Lectures : models.Manager["Lecture"]
 #------------------
-
 class Lecture(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
@@ -38,56 +39,65 @@ class Lecture(models.Model):
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Lectures",null=True,default=None)
     Questions : models.Manager["Question"]
 #------------------
-
 class Question(models.Model):
     ID = models.AutoField(primary_key=True)
     Text_Url = models.CharField(max_length=400)
     Type = models.IntegerField(choices=QuestionType.choices(), default=QuestionType.MCQ_ONE_ANS)
     Ans = models.CharField(max_length=400)
-    lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
-    IsInAnExam = models.BooleanField()
+    Lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
+    InExamCounter = models.IntegerField(default=0,null=False)
     Ease = models.IntegerField(choices=QuestionEase.choices(),default=QuestionEase.EASY)
-    soln:models.Manager["soln"]
-    User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
+    Solns:models.Manager["Soln"]
+    OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
     Exams:models.Manager["Exam"] # only owner should see this else shouldn't see
 #------------------
-class Setting(models.Model):
-    ID = models.AutoField(primary_key=True)
-    ExamInterval = models.TimeField()
-    AutoCorrect = models.BooleanField(default=True)
-    QuestionByQuestion = models.BooleanField(default=True)
-    TrackSolutions = models.BooleanField(default=True)
-    Public = models.BooleanField(default=False)
-    AllowDownLoad = models.BooleanField(default=False)
-#------------------
-
 class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
-    IsScheduled = models.BooleanField()
+    Title = models.TextField(null=True,blank=True)
+    CreatedAt = models.DateTimeField(null=False,default=datetime.now())
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
-    User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
+    Owner =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
     Questions = models.ManyToManyField("Question", through="ExamQuestion", related_name="Exams")
-    Settings = models.ForeignKey(Setting, on_delete=models.CASCADE)
-    classRooms:models.Manager["classRoom"]
-    solns:models.Manager["soln"]
+    ClassRooms:models.Manager["classRoom"]
+    Solns:models.Manager["Soln"]
+    Settings:models.Manager["Settings"]
 #------------------
 class ExamQuestion(models.Model):
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     Question = models.ForeignKey(Question, on_delete=models.CASCADE)
     Order = models.IntegerField(default=0)
 #------------------
-
-class soln(models.Model):
+class Settings(models.Model):
+    Locations:models.Manager["Location"]
+    ID = models.AutoField(primary_key=True)
+    PreventOtherTabs = models.BooleanField(default=True,null=False)
+    Duration_min = models.TimeField()
+    AutoCorrect = models.BooleanField(default=True)
+    QuestionByQuestion = models.BooleanField(default=True)
+    ShareWith = models.IntegerField(choices=ShareWithEnum.choices(),default=False)
+    AllowDownLoad = models.BooleanField(default=False)
+    StartAt = models.DateTimeField(null=True,blank=True)
+    EndAt = models.DateTimeField(null=True,blank=True)
+    Exam = models.OneToOneField(Exam,null=True,blank=True,related_name="Settings",on_delete=models.CASCADE)
+#------------------
+class Location(models.Model):
+    ID = models.AutoField(primary_key=True)
+    Xaxis = models.FloatField()
+    Yaxis = models.FloatField()
+    Exam = models.ForeignKey(Settings,on_delete=models.CASCADE,related_name="Locations")
+#------------------
+class Soln(models.Model):
     ID = models.AutoField(primary_key=True)
     Exam = models.ForeignKey(Exam,on_delete=models.CASCADE,related_name="Solns")
     Question = models.ForeignKey(Question,on_delete=models.CASCADE,related_name="Solns")
-    User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
+    SolvedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
 #------------------
 class classRoom(models.Model):
     ID = models.AutoField(primary_key=True)
-    Creator = models.ForeignKey(User,on_delete=models.CASCADE,related_name="classRoomsOwner",null=False)
-    Students = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="classRoomsMember",null=True)
-    Admin = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Admin",null=True)
-    attachments = models.FileField(upload_to="uploads/")
-    allowThirdPartySeen = models.BooleanField(default=False,null=False)
+    OwnedBy = models.OneToOneField(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
+    Teacher = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Teaches",null=True)
+    Students = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="StudyAt",null=True)
+    Admin = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Administrate",null=True)
+    Attachments = models.FileField(upload_to="uploads/")
+    HideFromSearch = models.BooleanField(default=False,null=False)
 #------------------

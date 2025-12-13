@@ -13,11 +13,7 @@ class LoginRequiredMiddleware:
         # URLs you want to exclude from authentication check:
         self.exclude_paths = [
             reverse('API_v0_login'),
-            reverse('API_v0_createUser'),
-            reverse('login'),
-            reverse('createUser'),
-            reverse('signup'),
-            reverse('userloginPage')
+            reverse('API_v0_createUser')
         ]
 
     def __call__(self, request):

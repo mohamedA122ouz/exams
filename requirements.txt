@@ -1,0 +1,14 @@
+django==5.2.6
+mysqlclient==2.2.4
+
+# Timezone fix for Windows
+tzdata==2024.1
+
+# Testing
+pytest==9.0.2
+pytest-django==4.11.1
+pytest-cov==6.1.1
+pytest-mock==3.14.0
+
+# CORS
+django-cors-headers==4.4.0

@@ -1,6 +1,6 @@
 from typing import Any
 from django.http import HttpRequest, HttpResponse,JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from core.models.Exams_models import Exam, Subject
 from django.contrib.auth.models import User

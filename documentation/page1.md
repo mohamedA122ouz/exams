@@ -38,11 +38,11 @@ if user status `200` then the action is done successfully while if the status is
 
 - Response Example:
 
-|what happen|status|json|
-|---|---|---|
-|success|`200`|{"login": "successfully done"}|
-|wrong field|`400`|{"login": "username/password is wrong"}|
-|server error|`500`|{"fail": "username/password is wrong"}|
+| what happen  | status | json                                    |
+| ------------ | ------ | --------------------------------------- |
+| success      | `200`  | {"login": "successfully done"}          |
+| wrong field  | `400`  | {"login": "username/password is wrong"} |
+| server error | `500`  | {"fail": "username/password is wrong"}  |
 
 ---
 
@@ -65,11 +65,11 @@ if user status `200` then the action is done successfully while if the status is
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| success       | `200`  | `{"success":"signup success"}` |
-| wrong field   | `400`  | `{"username":"is already exist"}` <br> `{"email":"is Null","lastname":"is Null","firstname":"is Null","password2":"is different the entered password"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| what happen  | status | json                                                                                                                                                    |
+| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| success      | `200`  | `{"success":"signup success"}`                                                                                                                          |
+| wrong field  | `400`  | `{"username":"is already exist"}` <br> `{"email":"is Null","lastname":"is Null","firstname":"is Null","password2":"is different the entered password"}` |
+| server error | `500`  | `{"fail":"something went wrong"}`                                                                                                                       |
 
 
 > Notice username could be anything but it must be unique according to the users in the database
@@ -91,10 +91,10 @@ if user status `200` then the action is done successfully while if the status is
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | `{"year_id":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| what happen  | status | json                              |
+| ------------ | ------ | --------------------------------- |
+| wrong field  | `400`  | `{"year_id":"cannot be null"}`    |
+| server error | `500`  | `{"fail":"something went wrong"}` |
 
 ```json
 //success reponse | STATUS 200
@@ -131,10 +131,10 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | `{"name":"term name cannot be null"}` <br> `{"name":"year ID cannot be null"}` <br> `{"name":"year doesn't exist"}` (only one returned at a time) |
-| server error  | `500`  | `{"fail":"term creation faild"}` |
+| what happen  | status | json                                                                                                                                              |
+| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| wrong field  | `400`  | `{"name":"term name cannot be null"}` <br> `{"name":"year ID cannot be null"}` <br> `{"name":"year doesn't exist"}` (only one returned at a time) |
+| server error | `500`  | `{"fail":"term creation faild"}`                                                                                                                  |
 
 ---
 
@@ -170,10 +170,10 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | `{"name":"cannot be null"}` <br> `{"name":"cannot create two years with the same name"}` |
-| server error  | `500`  | `{"fail":"created faild"}` |
+| what happen  | status | json                                                                                     |
+| ------------ | ------ | ---------------------------------------------------------------------------------------- |
+| wrong field  | `400`  | `{"name":"cannot be null"}` <br> `{"name":"cannot create two years with the same name"}` |
+| server error | `500`  | `{"fail":"created faild"}`                                                               |
 
 ---
 
@@ -193,11 +193,11 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| server error  | `200`  | `{"success":"subject created"}` |
-| wrong field   | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"faild term is not exist"}` <br> `{"creation":"faild year is not exist"}` |
-| server error  | `500`  | `{"fail":"faild no reason specified"}` |
+| what happen  | status | json                                                                                                                                                                                                                   |
+| ------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| server error | `200`  | `{"success":"subject created"}`                                                                                                                                                                                        |
+| wrong field  | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"faild term is not exist"}` <br> `{"creation":"faild year is not exist"}` |
+| server error | `500`  | `{"fail":"faild no reason specified"}`                                                                                                                                                                                 |
 
 ---
 
@@ -208,10 +208,10 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | none → `None` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| what happen  | status | json                              |
+| ------------ | ------ | --------------------------------- |
+| wrong field  | `400`  | none → `None`                     |
+| server error | `500`  | `{"fail":"something went wrong"}` |
 
 ```json
 //success reponse | STATUS 200
@@ -243,10 +243,10 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | `{"subject_id":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| what happen  | status | json                              |
+| ------------ | ------ | --------------------------------- |
+| wrong field  | `400`  | `{"subject_id":"cannot be null"}` |
+| server error | `500`  | `{"fail":"something went wrong"}` |
 
 ```json
 //success reponse | STATUS 200
@@ -277,11 +277,11 @@ OR
 
 - Response Details
 
-| what happen   | status | json |
-|---------------|--------|------|
-| success       | `200`  | `{"success":"successful"}` |
-| wrong field   | `400`  | `{"name":"cannot give null name"}` <br> `{"subject_id":"cannot be null"}` <br> `{"subject":"is not found"}` <br> `{"name":"cannot create two lectures with the same name"}`  |
-| server error  | `500`  | `{"fail":"no lecture created"}` |
+| what happen  | status | json                                                                                                                                                                        |
+| ------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| success      | `200`  | `{"success":"successful"}`                                                                                                                                                  |
+| wrong field  | `400`  | `{"name":"cannot give null name"}` <br> `{"subject_id":"cannot be null"}` <br> `{"subject":"is not found"}` <br> `{"name":"cannot create two lectures with the same name"}` |
+| server error | `500`  | `{"fail":"no lecture created"}`                                                                                                                                             |
 
 
 ---
@@ -292,10 +292,10 @@ OR
 - Params: `lecture:string`
 - Request Example: `/api/v0/questions?lecture_id=1`
 
-| what happen   | status | json |
-|---------------|--------|------|
-| wrong field   | `400`  | `{"lecture_id":"cannot be null"}` |
-| server error  | `500`  | `{"fail":"something went wrong"}` |
+| what happen  | status | json                              |
+| ------------ | ------ | --------------------------------- |
+| wrong field  | `400`  | `{"lecture_id":"cannot be null"}` |
+| server error | `500`  | `{"fail":"something went wrong"}` |
 
 ```json
 //success reponse | STATUS 200
@@ -330,22 +330,99 @@ OR
 > WRITTEN_QUETION = "1"
 > COMPLEX = "2"
 
-| what happen   | status | json |
-|---------------|--------|------|
-| success       | `200`  | `{"success":"creation success"}` |
-| wrong field   | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"lecture":"lecture not found"}` <br> `{"type":"must be number"}`|
-| server error  | `500`  | `{"fail":"creation faild"}` |
+| what happen  | status | json                                                                                                                                                                                                            |
+| ------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| success      | `200`  | `{"success":"creation success"}`                                                                                                                                                                                |
+| wrong field  | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"lecture":"lecture not found"}` <br> `{"type":"must be number"}` |
+| server error | `500`  | `{"fail":"creation faild"}`                                                                                                                                                                                     |
 
 ---
 
 ## create questions
 
-- Method:`POST`, endpoint:`/api/v0/questions/create`
+Got it! I can rewrite your documentation so that it matches the current endpoint and the new input format. Here’s a cleaned-up and accurate version:
 
-| what happen   | status | json |
-|---------------|--------|------|
-| success       | `200`  | `{"success":"questions list created successfully"}` |
-| wrong field   | `400`  | `{"num":"questions number cannot be null"}` <br> `{"num":"questions number cannot be a text"}` <br> `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"num":"some of the parameters doesn't have the same length of the questions number 'num'"}`|
-| server error  | `500`  | `{"fail":"questions list faild to be created"}` |
+---
+
+## Create Questions
+
+* **Method:** `POST`
+* **Endpoint:** `/api/v0/questions/create`
+
+### Request Body
+
+```ts
+enum QuestionType {
+    MCQ_ONE_ANS = 0,
+    MCQ_MORE_ANS = 1,
+    WRITTEN_QUESTION = 2,
+    COMPLEX = 3,
+}
+enum Ease {
+    EASY = 0,
+    MEDIUM = 1,
+    HARD = 2,
+}
+// Question input
+interface QuestionInput {
+    answers: string;
+    question: string;
+    questionType: QuestionType;
+    ease: Ease;
+    choices: string[] | null;
+    attachments: null |
+        {
+            type: "img" | "audio" | "video" | "youtube";
+            link: string;
+        };
+    lecture_id: number;
+}
+
+// Request body
+interface RequestType {
+    editor_input: QuestionInput[];
+}
+
+```
+
+```json
+//RequestType - 
+{
+    "editor_input": [
+        {
+            "answers": "string",
+            "question": "string",
+            "questionType": 0,
+            "ease": 0,
+            "choices": ["string1", "string2"],  // or null
+            "attachments": {                   // or null
+                "type": "img|audio|video|youtube",
+                "link": "string"
+            },
+            "lecture_id": 1
+        }
+    ]
+}
+```
+
+* **Field explanations:**
+
+  * `answers` → the correct answer(s) as a string.
+  * `question` → the text of the question.
+  * `questionType` → integer representing question type (0 to 3).
+  * `ease` → integer representing difficulty (0 to 2).
+  * `choices` → array of choices for multiple-choice questions or `null`.
+  * `attachments` → optional attachment object or `null`. Object has `type` and `link`.
+  * `lecture_id` → ID of the lecture the question belongs to.
+
+---
+
+### Responses
+
+| Scenario      | Status | JSON Example |
+| ------------- | ------ | -------------|
+| Success       | `200`  | `{"success":"questions list created successfully"}` |
+| Invalid input | `400`  | `{"editor_input":"cannot be null or empty"}` <br> `{"questionType":"must be 0-3"}` <br> `{"ease":"must be 0-2"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"answers":"cannot be null"}` <br> `{"question":"cannot be null"}` |
+| Server error  | `500`  | `{"fail":"questions list failed to be created"}` |
 
 ---

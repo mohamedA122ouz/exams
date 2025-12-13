@@ -2,14 +2,18 @@ import json
 from typing import Any, Union, cast
 
 from django.forms import model_to_dict
+from core.models.Exams_models import Question
 from core.services.types.attachmentType import Attachments
 from core.services.types.userType import IUserHelper
-from ..types.questionType import AnsParserOutput, ExamAutoGenerator, ExamSetting, QuestionSelector,QuestionEase, QuestionType
+from ..types.questionType import QparserOutput, ExamAutoGenerator, ExamSetting, QuestionSelector,QuestionEase, QuestionType, reverseParserOutput
 import random
 
 
-def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
-    ansList:list[AnsParserOutput] = []
+def Qparser(examText:str)->list[QparserOutput]:
+    """Qparser takes data from database question and convert it to a json that could be send to the frontend 
+    | you can use it later on to generate exam directly when user send you text of this language form
+    """
+    ansList:list[QparserOutput] = []
     gForSIMICOLON:list[int] = random.sample(range(999999000,999999999),1)
     _simiColon = f"{gForSIMICOLON[0]}"
     examText = examText.replace("#;",_simiColon)
@@ -26,7 +30,7 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
         haveMoreThanOneAns = False
         choices:list[str] = []
         questionText = "" 
-        questionItem:AnsParserOutput = cast(AnsParserOutput,{})
+        questionItem:QparserOutput = cast(QparserOutput,{})
         attachment:list[Attachments] = []
         attachmentID = 0
         for _str in question.split('~'):
@@ -152,7 +156,14 @@ def ExamAndQuestionParser(examText:str)->list[AnsParserOutput]:
     #------------------
     return ansList
 #------------------
-def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->Any:#this should build exam but not it is just checker if all things work
+def QparserHelper(q:Question)->QparserOutput:
+    """Takes Question from database and fix it to allow parser to see question answer"""
+    txt = q.Text_Url
+    txt += f'~ANS@{q.Ans}'
+    return Qparser(txt)[0]
+#------------------
+def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->Any:
+    
     examAGDict:ExamAutoGenerator = cast(ExamAutoGenerator,{})
     if isinstance(examJson,str):
         examJson = json.loads(examJson)
@@ -203,4 +214,36 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
         random.shuffle(serialized_exam)
     print(serialized_exam)
     return serialized_exam
+#------------------
+def reverseQParser(jsonItem:QparserOutput)->reverseParserOutput:
+    """Takes json from frontend and parser it to allow storing it into database"""
+    generateNumber:list[int] = random.sample(range(97890900,97899999),4)
+    _simiColon = f"{generateNumber[2]}"
+    _tildaSign:str = f"^&*{generateNumber[0]}%"
+    _atSign = f"^&*{generateNumber[1]}%"
+    _dollar = f"^&*{generateNumber[3]}%"
+    jsonItem["question"] = jsonItem["question"].replace("#$",_dollar)
+    jsonItem["question"] = jsonItem["question"].replace(";",_simiColon)
+    jsonItem["question"] = jsonItem["question"].replace("@",_atSign)
+    jsonItem["question"] = jsonItem["question"].replace("~",_tildaSign)
+    item:reverseParserOutput = cast(reverseParserOutput,{})
+    if jsonItem["attachments"]:
+        for i,attachment in enumerate(jsonItem["attachments"]):
+            rp = f"~IMAGE@{attachment['link']}" if attachment["type"] == 'img'else f'~{attachment["type"].upper()}@{attachment["link"]}'
+            jsonItem["question"] = jsonItem["question"].replace(f'${i}',rp)
+        #------------------
+    #------------------
+    if jsonItem["choices"]:
+        jsonItem["question"] = "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
+    #------------------
+    jsonItem["question"] = jsonItem["question"].replace(_dollar,"$")
+    jsonItem["question"] = jsonItem["question"].replace(_simiColon,"#;")
+    jsonItem["question"] = jsonItem["question"].replace(_atSign,"#@")
+    jsonItem["question"] = jsonItem["question"].replace(_tildaSign,"#~")
+    item["ans"] = jsonItem["answers"]
+    item["question"] = jsonItem["question"]
+    item["ease"] = jsonItem["ease"]
+    item["type"] = jsonItem["questionType"]
+    item["lecture_id"] = jsonItem["lecture_id"]
+    return item
 #------------------
