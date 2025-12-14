@@ -174,40 +174,30 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
     if not "questions" in examAGDict:
         raise "exam questions doesn't exist"
     examSettings:ExamSetting = examAGDict['generatorSettings']
-    if not "yearName" in examSettings:
+    if not "yearID" in examSettings:
         raise "year name doesn't exist"
-    if not "subjectName" in examSettings:
+    if not "subjectID" in examSettings:
         raise "subject name doesn't exist"
-    if not "termName" in examSettings:
+    if not "termID" in examSettings:
         raise "term name doesn't exist"
-    if not "lectureName" in examSettings:
-        raise "lecture name doesn't exist"
     if not "randomization" in examSettings:
         raise "randomization settings doesn't exist"
     examQuestions:list[QuestionSelector] = examAGDict['questions']
     if not isinstance(examQuestions,list):
         raise "exam questions is not in list"
-    subject = user.Subjects.filter(Name=examSettings['subjectName'],Term__Name=examSettings['termName'],Year__Name=examSettings['yearName']).first()
+    subject = user.Subjects.filter(ID=examSettings['subjectID'],Term__Name=examSettings['termID'],Year__Name=examSettings['yearID']).first()
     if not subject:
-        raise Exception(f"cannot find subject: {examSettings} in year:{examSettings['yearName']} and term:{examSettings['termName']}")
-    lecture = subject.Lectures.filter(Name=examSettings['lectureName']).first()
-    if not lecture:
-        raise Exception(f"lecture:{lecture} is not exist")
-    easyQuestions = lecture.Questions.filter(Ease=QuestionEase.EASY.value)
-    mediumQuestions = lecture.Questions.filter(Ease=QuestionEase.MEDIUM.value)
-    hardQuestions = lecture.Questions.filter(Ease=QuestionEase.HARD.value)
+        raise Exception(f"cannot find subject: {examSettings} in year:{examSettings['yearID']} and term:{examSettings['termID']}")
     exam = []
     for question in examQuestions:
         if not "count" in question:
             raise Exception("question ease doesn't have a count")
         if not "ease" in question:
             raise Exception("ease level is not exist")
-        if question["ease"] == QuestionEase.EASY.value:
-            exam+=easyQuestions[:question['count']]
-        elif question['ease'] == QuestionEase.MEDIUM.value:
-            exam+=mediumQuestions[:question['count']]
-        elif question['ease'] == QuestionEase.HARD.value:
-            exam+=hardQuestions[:question['count']]
+        qSet = user.Questions.filter(Ease=question["ease"])
+        if not qSet:
+            raise Exception("qSet is none or empty")
+        exam+=qSet[:question['count']]
     #------------------
     serialized_exam = [model_to_dict(q) for q in exam]
     if examSettings['randomization']:

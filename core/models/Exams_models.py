@@ -2,6 +2,7 @@ from datetime import datetime
 from random import choice
 from django.db import models
 from django.contrib.auth.models import User
+from core.services.types.modelsHelperTypes import ManyToManyManager
 from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
 
 
@@ -49,7 +50,7 @@ class Question(models.Model):
     Ease = models.IntegerField(choices=QuestionEase.choices(),default=QuestionEase.EASY)
     Solns:models.Manager["Soln"]
     OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
-    Exams:models.Manager["Exam"] # only owner should see this else shouldn't see
+    Exams:ManyToManyManager["Exam"] # only owner should see this else shouldn't see
 #------------------
 class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -58,7 +59,7 @@ class Exam(models.Model):
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
     Owner =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
     Questions = models.ManyToManyField("Question", through="ExamQuestion", related_name="Exams")
-    ClassRooms:models.Manager["classRoom"]
+    ClassRooms:ManyToManyManager["classRoom"]
     Solns:models.Manager["Soln"]
     Settings:models.Manager["Settings"]
 #------------------
@@ -71,7 +72,7 @@ class Settings(models.Model):
     Locations:models.Manager["Location"]
     ID = models.AutoField(primary_key=True)
     PreventOtherTabs = models.BooleanField(default=True,null=False)
-    Duration_min = models.TimeField()
+    Duration_min = models.IntegerField(default=0)
     AutoCorrect = models.BooleanField(default=True)
     QuestionByQuestion = models.BooleanField(default=True)
     ShareWith = models.IntegerField(choices=ShareWithEnum.choices(),default=False)
@@ -100,4 +101,10 @@ class classRoom(models.Model):
     Admin = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Administrate",null=True)
     Attachments = models.FileField(upload_to="uploads/")
     HideFromSearch = models.BooleanField(default=False,null=False)
+    Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
+#------------------
+class classRoom_Exam(models.Model):
+    ID = models.AutoField(primary_key=True)
+    Exams = models.ForeignKey(Exam,on_delete=models.CASCADE)
+    classRoom = models.ForeignKey(classRoom,on_delete=models.CASCADE)
 #------------------

@@ -3,6 +3,7 @@ from typing import Optional, cast
 from django.http import HttpRequest,JsonResponse
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
+from core.services import examService
 from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
@@ -12,6 +13,7 @@ from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
 from core.services.types.questionType import ExamAutoGenerator, QparserOutput
 from core.services.yearServices import YearService
+from core.services.examService import GeneralExamServices
 
 #level one
 @require_GET
@@ -89,6 +91,12 @@ def createQuestions(request:HttpRequest)->JsonResponse:
     editor_input:Optional[list[QparserOutput]] = body.get("editor_input",None)
     return ResponseHelper(QuestionServices(request.user).createQuestions(editor_input))
 #------------------
+@require_GET
+@csrf_exempt
+def createExam(request:HttpRequest)->JsonResponse:
+    e = GeneralExamServices(request.user)
+    e.createExam("test Exam",30,1,[1,2,3])
+    return ResponseHelper({"sucess":"may be success I don't know"})
 @require_POST
 @csrf_exempt
 def autoGenerateExam(request:HttpRequest)->JsonResponse:

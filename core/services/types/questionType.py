@@ -38,13 +38,13 @@ class QparserOutput(TypedDict):
     lecture_id:int
 #------------------
 class ExamSetting(TypedDict):
-    subjectName:str
-    yearName:str
-    termName:str
-    lectureName:Optional[str]
+    subjectID:str
+    yearID:str
+    termID:str
     randomization:bool
 #------------------
 class QuestionSelector(TypedDict):
+    lectureID:int
     ease:int|QuestionEase
     count:int
 #------------------
