@@ -8,6 +8,7 @@ from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
+from core.services.types.examTypes import ExamSettings
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
@@ -95,7 +96,7 @@ def createQuestions(request:HttpRequest)->JsonResponse:
 @csrf_exempt
 def createExam(request:HttpRequest)->JsonResponse:
     e = GeneralExamServices(request.user)
-    e.createExam("test Exam",30,1,[1,2,3])
+    e.createExam("test Exam",1,[1,2,3],cast(ExamSettings,{}))
     return ResponseHelper({"sucess":"may be success I don't know"})
 @require_POST
 @csrf_exempt

@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict
+from typing import Any, Generic, Literal, Optional, Protocol, TypeVar, TypedDict
 from enum import IntEnum
 
 from core.services.types.attachmentType import Attachments
@@ -37,7 +37,7 @@ class QparserOutput(TypedDict):
     attachments:Optional[list[Attachments]]
     lecture_id:int
 #------------------
-class ExamSetting(TypedDict):
+class AutoGenExamSetting(TypedDict):
     subjectID:str
     yearID:str
     termID:str
@@ -49,7 +49,7 @@ class QuestionSelector(TypedDict):
     count:int
 #------------------
 class ExamAutoGenerator(TypedDict):
-    generatorSettings:ExamSetting
+    generatorSettings:AutoGenExamSetting
     questions:list[QuestionSelector]
 #------------------
 class reverseParserOutput(TypedDict):
@@ -58,4 +58,10 @@ class reverseParserOutput(TypedDict):
     type:int|QuestionType
     ease:int|QuestionEase
     lecture_id:int
+#------------------
+T = TypeVar("T")
+class parserOutput(TypedDict,Generic[T]):
+    isSuccess:bool
+    output:T
+    error:Optional[dict[str,str]]
 #------------------

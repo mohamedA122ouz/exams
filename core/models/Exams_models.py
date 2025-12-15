@@ -85,7 +85,7 @@ class Location(models.Model):
     ID = models.AutoField(primary_key=True)
     Xaxis = models.FloatField()
     Yaxis = models.FloatField()
-    Exam = models.ForeignKey(Settings,on_delete=models.CASCADE,related_name="Locations")
+    Settings = models.ForeignKey(Settings,on_delete=models.CASCADE,related_name="Locations")
 #------------------
 class Soln(models.Model):
     ID = models.AutoField(primary_key=True)
