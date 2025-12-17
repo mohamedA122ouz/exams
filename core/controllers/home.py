@@ -1,4 +1,5 @@
-from typing import Any
+from typing import Any, cast
+from django.forms import model_to_dict
 from django.http import HttpRequest, HttpResponse,JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
@@ -8,6 +9,7 @@ from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+from core.services.types.userType import IUserHelper
 from core.services.utils.jsonResponseHelper import ResponseHelper
 
 def home(request:HttpRequest):
@@ -78,6 +80,10 @@ def userLogin(request:HttpRequest):
     user = authenticate(request=request,password=password,username=username)
     if not user == None:
         login(request,user)
-        return ResponseHelper({"success":"successfully done"})
+        user = cast(IUserHelper,request.user)
+        user_settings = user.Settings.first()
+        if not user_settings:
+            user_settings = user.Settings.create(PreferedLang="EN")
+        return ResponseHelper({"success":"successfully done","settings":user_settings})
     else:
         return ResponseHelper({"login":"username/password is wrong"})

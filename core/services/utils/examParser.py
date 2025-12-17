@@ -164,7 +164,11 @@ def Qparser(examText:str)->parserOutput[Optional[list[QparserOutput]]]:
             questionItem["choices"] = None
         #------------------
         if isMultiChoice and len(ansString) == 0:
-            raise Exception("choices questions cannot be created without any answers")
+            return {
+                "error":{"examText":"choices questions cannot be created without any answers"},
+                "isSuccess":False,
+                "output":None
+            }
         questionText = questionText.replace(_atSign,'@')
         questionText = questionText.replace(_tildaSign,'~')
         questionText = questionText.replace(_simiColon,';')

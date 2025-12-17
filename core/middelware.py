@@ -1,7 +1,10 @@
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpRequest
 from django.shortcuts import redirect
-from django.urls import reverse
 
+from django.urls import reverse
+import logging
+import uuid
+logger = logging.getLogger("django")
 class LoginRequiredMiddleware:
     """
     Middleware that forces login for every view,
@@ -16,12 +19,27 @@ class LoginRequiredMiddleware:
             reverse('API_v0_createUser')
         ]
 
-    def __call__(self, request):
-        # If user not authenticated and path not excluded → redirect
-        if not request.user.is_authenticated and request.path not in self.exclude_paths:
-            if request.path.startswith("/api"):
-                return JsonResponse({"login":"is required"})
-            return redirect('userloginPage')
-        # Otherwise, continue normally
-        response = self.get_response(request)
-        return response
+    def __call__(self, request:HttpRequest):
+        try:
+            # If user not authenticated and path not excluded → redirect
+            if not request.user.is_authenticated and request.path not in self.exclude_paths:
+                if request.path.startswith("/api"):
+                    return JsonResponse({"login":"is required"})
+                return redirect('userloginPage')
+            # Otherwise, continue normally
+            response = self.get_response(request)
+            return response
+        #------------------
+        except Exception as e:
+            errorID = uuid.uuid4().hex[:5]
+            user_id = getattr(request.user, "id", None)
+            user_label = user_id if user_id is not None else "AnonymousUser"
+            logger.exception(
+                f"Request-Path:{request.path};\n"
+                f"User-ID:{user_label};\n"
+                f"ERR-ID:{errorID}\n"
+                f"{'-'*100}"
+            )
+            userError = f"unexpected error ERR-ID:{errorID}"
+            return JsonResponse({"fail":userError},status=500)
+        #------------------

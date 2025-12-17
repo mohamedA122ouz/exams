@@ -8,8 +8,8 @@ from core.services.types.questionType import QuestionEase, QuestionType, ShareWi
 
 class ProfileSettings(models.Model):
     ID = models.AutoField(primary_key=True)
-    PreferedLang = models.TextField(default='en',null=False)
-    User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="ProfileSettings")
+    PreferedLang = models.TextField(default='EN',null=False)
+    User = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Settings")
 
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)

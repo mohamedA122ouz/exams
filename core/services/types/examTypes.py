@@ -14,7 +14,13 @@ class ExamSettings(TypedDict):
     AutoCorrect:bool
     QuestionByQuestion:bool
     ShareWith:ShareWithEnum
-    AllowDownLoad:bool
+    AllowDownload:bool
     StartAt:Optional[datetime]
     EndAt:Optional[datetime]
+#------------------
+class examRequest(TypedDict):
+    title:str
+    question_ids:list[int]
+    subject_id:int
+    settings:Optional[ExamSettings]
 #------------------

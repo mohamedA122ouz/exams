@@ -8,7 +8,7 @@ from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
-from core.services.types.examTypes import ExamSettings
+from core.services.types.examTypes import ExamSettings, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
@@ -92,37 +92,20 @@ def createQuestions(request:HttpRequest)->JsonResponse:
     editor_input:Optional[list[QparserOutput]] = body.get("editor_input",None)
     return ResponseHelper(QuestionServices(request.user).createQuestions(editor_input))
 #------------------
-@require_GET
-@csrf_exempt
-def createExam(request:HttpRequest)->JsonResponse:
-    e = GeneralExamServices(request.user)
-    e.createExam("test Exam",1,[1,2,3],cast(ExamSettings,{}))
-    return ResponseHelper({"sucess":"may be success I don't know"})
 @require_POST
 @csrf_exempt
-def autoGenerateExam(request:HttpRequest)->JsonResponse:
-    body:ExamAutoGenerator = json.loads(request.body)
-    try:
-        exam = autoGeneratorParser(body,cast(IUserHelper,request.user))
-        if not exam:
-            return JsonResponse({"exam":"exam body is not exist"})
-        return JsonResponse(exam)
-    #------------------
-    except Exception as e:
-        if "generator" in str(e):
-            return JsonResponse({"generatorSettings":str(e)})
-        if "exam" in str(e):
-            return JsonResponse({"questions":str(e)})
-        if "year" in str(e):
-            return JsonResponse({"yearName":str(e)})
-        if "subject" in str(e):
-            return JsonResponse({"subjectName":str(e)})
-        if "term" in str(e):
-            return JsonResponse({"termName":str(e)})
-        if "lecture" in str(e):
-            return JsonResponse({"lectureName":str(e)})
-        if "randomization" in str(e):
-            return JsonResponse({"randomization":str(e)})
-        return JsonResponse({})
-    #------------------
+def createExam(request:HttpRequest)->JsonResponse:
+    body:examRequest = cast(examRequest,json.loads(request.body))
+    e = GeneralExamServices(request.user)
+    settings = cast(ExamSettings,{})
+    if not "title" in body:
+        return ResponseHelper({"title":"cannot be null"})
+    if not "subject_id" in body:
+        return ResponseHelper({"subject_id":"cannot be null"})
+    if not "question_ids" in body:
+        return ResponseHelper({"question_ids":"cannot be null"})
+    if body["settings"]:
+        settings = body["settings"]
+    output = e.pickExam(body["title"],body["subject_id"],body["question_ids"],settings)
+    return ResponseHelper(output)
 #------------------
