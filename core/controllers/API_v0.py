@@ -12,7 +12,7 @@ from core.services.types.examTypes import ExamSettings, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.jsonResponseHelper import ResponseHelper
-from core.services.types.questionType import ExamAutoGenerator, QparserOutput
+from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
 
@@ -74,22 +74,21 @@ def createLectures(request:HttpRequest)->JsonResponse:
 @require_GET
 @csrf_exempt
 def showQuestions(request:HttpRequest)->JsonResponse:
-    lecture = request.GET.get("lecture",None)
+    lecture = request.GET.get("lecture_id",None)
     return ResponseHelper(QuestionServices(request.user).showQuestions(lecture))
 #------------------
 @require_POST
 @csrf_exempt
 def createQuestion(request:HttpRequest)->JsonResponse:
-    body:dict = json.loads(request.body)
-    Text_Url:Optional[str] = body.get("text_url",None)
-    lectureID:Optional[str] = body.get("lecture_id",None)
-    return ResponseHelper(QuestionServices(request.user).createQuestion(Text_Url,lectureID))
+    
+    editor:QuestionFromFront = json.loads(request.body)
+    return ResponseHelper(QuestionServices(request.user).createQuestion(editor,lectureID))
 #------------------
 @require_POST
 @csrf_exempt
 def createQuestions(request:HttpRequest)->JsonResponse:
     body:dict = json.loads(request.body)
-    editor_input:Optional[list[QparserOutput]] = body.get("editor_input",None)
+    editor_input:Optional[list[QuestionFromFront]] = body.get("editor_input",None)
     return ResponseHelper(QuestionServices(request.user).createQuestions(editor_input))
 #------------------
 @require_POST

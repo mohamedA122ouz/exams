@@ -19,7 +19,7 @@
   - [**10. Usage Example**](#10-usage-example)
 
 
-**Function:** `QparserType(examText: str) -> list[AnsParserOutput]`  
+**Function:** `toFrontendFormType(examText: str) -> list[AnsParserOutput]`  
 **Author:** Mohamed  
 **Version:** 2.0  
 **Purpose:** Converts a text-based exam specification into a structured list of questions, including multiple-choice (single or multi-answer) and written questions, with HTML-ready rendering and answer mapping.  
@@ -28,7 +28,7 @@
 
 ## **1. Introduction**
 
-`QparserType` is a Python function that parses a custom exam markup language and generates a structured, machine-readable output for each question. It supports:
+`toFrontendFormType` is a Python function that parses a custom exam markup language and generates a structured, machine-readable output for each question. It supports:
 
 * Multi-segment questions (text + attachments)
 * Multiple-choice questions (single or multi-answer)
@@ -192,7 +192,7 @@ Tell me your favorite programming language
 ~ANS@Python
 """
 
-parsed_questions = QparserType(exam_text)
+parsed_questions = toFrontendFormType(exam_text)
 
 for q in parsed_questions:
     print(q["questions"])

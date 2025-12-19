@@ -1,13 +1,14 @@
-from typing import Any, cast
+from typing import Any, Optional, cast
 from django.forms import model_to_dict
 from django.http import HttpRequest, HttpResponse,JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
-from core.models.Exams_models import Exam, Subject
+from core.models.Exams_models import Exam, ProfileSettings, Subject, supportedLanguages
 from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.forms import model_to_dict
 
 from core.services.types.userType import IUserHelper
 from core.services.utils.jsonResponseHelper import ResponseHelper
@@ -81,9 +82,20 @@ def userLogin(request:HttpRequest):
     if not user == None:
         login(request,user)
         user = cast(IUserHelper,request.user)
-        user_settings = user.Settings.first()
-        if not user_settings:
-            user_settings = user.Settings.create(PreferedLang="EN")
-        return ResponseHelper({"success":"successfully done","settings":user_settings})
+        lang = None
+        if not hasattr(user,"Settings"):
+            lang = supportedLanguages.objects.filter(Name="EN").first()
+            if lang:
+                ProfileSettings.objects.create(
+                    PreferedLang = lang,
+                    User=user
+                )
+            #------------------
+        #------------------
+        else:
+            settings:ProfileSettings = cast(ProfileSettings,user.Settings)
+            lang = cast(supportedLanguages,settings.PreferedLang).Name
+        #------------------
+        return ResponseHelper({"success":"successfully done","lang":lang})
     else:
         return ResponseHelper({"login":"username/password is wrong"})

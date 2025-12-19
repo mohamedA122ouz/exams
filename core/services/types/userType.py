@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Optional, Protocol
 from django.db.models import Manager
 from core.models import Year, Term, Subject, Lecture, Exam, Question, Soln,ProfileSettings
 from core.models.Exams_models import classRoom
@@ -15,5 +15,5 @@ class IUserHelper(Protocol):
     Teaches:Manager[classRoom]
     StudyAt:Manager[classRoom]
     Administrate:Manager[classRoom]
-    Settings:Manager[ProfileSettings]
+    Settings:Optional[ProfileSettings]
 #------------------

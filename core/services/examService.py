@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import Any, Optional, cast
 from core.models.Exams_models import Exam, ExamQuestion, Question, Settings
 from core.services.types.examTypes import ExamSettings
-from core.services.types.questionType import QparserOutput, ShareWithEnum
+from core.services.types.questionType import QuestionFromFront, ShareWithEnum
 from core.services.types.userType import IUserHelper
-from core.services.utils.examParser import Qparser, QparserHelper, reverseQParser
+from core.services.utils.examParser import toFrontendForm, toFrontendFormHelper, toDBFromParser
 from django.db.models import F
 
 class GeneralExamServices:
@@ -93,7 +93,7 @@ class GeneralExamServices:
         #------------------
         return {"classroom_id":"user don't have classroom with the given ID"}
     #------------------
-    def createExam(self,input:list[QparserOutput],title:str,subject_id:int,settings:ExamSettings):
+    def createExam(self,input:list[QuestionFromFront],title:str,subject_id:int,settings:ExamSettings):
         """Create full exam from scratch"""
         if not title:
             return {"title":"cannot be null"}
@@ -102,7 +102,7 @@ class GeneralExamServices:
         questions:list[Question] = []
         error:dict[str,Any] = {}
         for i in input:
-            output = reverseQParser(i)
+            output = toDBFromParser(i)
             if output["isSuccess"]:
                 q = output["output"]
                 questions.append(Question(
@@ -135,6 +135,7 @@ class GeneralExamServices:
             ExamQuestion(Exam=exam, Question=q, Order=i+1)
             for i, q in enumerate(questions)
         ]
+        self.defaultExamSettings(exam,settings)
         if len(questions) == len(exam_questions):
             return {"success":"objects created"}
         return {"faild":"something not created or something error"}

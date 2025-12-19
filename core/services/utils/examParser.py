@@ -5,15 +5,15 @@ from django.forms import model_to_dict
 from core.models.Exams_models import Question
 from core.services.types.attachmentType import Attachments
 from core.services.types.userType import IUserHelper
-from ..types.questionType import AutoGenExamSetting, QparserOutput, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, parserOutput, reverseParserOutput
+from ..types.questionType import AutoGenExamSetting, QuestionFromFront, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, parserOutput, QuestionToInsert
 import random
 
 
-def Qparser(examText:str)->parserOutput[Optional[list[QparserOutput]]]:
-    """Qparser takes data from database question and convert it to a json that could be send to the frontend 
+def toFrontendForm(examText:str)->parserOutput[Optional[list[QuestionFromFront]]]:
+    """toFrontendForm takes data from database question and convert it to a json that could be send to the frontend 
     | you can use it later on to generate exam directly when user send you text of this language form
     """
-    ansList:list[QparserOutput] = []
+    ansList:list[QuestionFromFront] = []
     gForSIMICOLON:list[int] = random.sample(range(999999000,999999999),1)
     _simiColon = f"{gForSIMICOLON[0]}"
     examText = examText.replace("#;",_simiColon)
@@ -30,7 +30,7 @@ def Qparser(examText:str)->parserOutput[Optional[list[QparserOutput]]]:
         haveMoreThanOneAns = False
         choices:list[str] = []
         questionText = "" 
-        questionItem:QparserOutput = cast(QparserOutput,{})
+        questionItem:QuestionFromFront = cast(QuestionFromFront,{})
         attachment:list[Attachments] = []
         attachmentID = 0
         for _str in question.split('~'):
@@ -183,11 +183,11 @@ def Qparser(examText:str)->parserOutput[Optional[list[QparserOutput]]]:
         "output":ansList
     }
 #------------------
-def QparserHelper(q:Question)->parserOutput[Optional[QparserOutput]]:
+def toFrontendFormHelper(q:Question)->parserOutput[Optional[QuestionFromFront]]:
     """Takes Question from database and fix it to allow parser to see question answer"""
     txt = q.Text_Url
     txt += f'~ANS@{q.Ans}'
-    items =  Qparser(txt)
+    items =  toFrontendForm(txt)
     if items["output"] and len(items["output"]) > 0:
         item = items["output"][0]
         return {
@@ -296,7 +296,7 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
         "output":serialized_exam
     }
 #------------------
-def reverseQParser(jsonItem:QparserOutput)->parserOutput[reverseParserOutput]:
+def toDBFromParser(jsonItem:QuestionFromFront)->parserOutput[QuestionToInsert]:
     """Takes json from frontend and parser it to allow storing it into database"""
     generateNumber:list[int] = random.sample(range(97890900,97899999),4)
     _simiColon = f"{generateNumber[2]}"
@@ -307,7 +307,7 @@ def reverseQParser(jsonItem:QparserOutput)->parserOutput[reverseParserOutput]:
     jsonItem["question"] = jsonItem["question"].replace(";",_simiColon)
     jsonItem["question"] = jsonItem["question"].replace("@",_atSign)
     jsonItem["question"] = jsonItem["question"].replace("~",_tildaSign)
-    item:reverseParserOutput = cast(reverseParserOutput,{})
+    item:QuestionToInsert = cast(QuestionToInsert,{})
     if jsonItem["attachments"]:
         for i,attachment in enumerate(jsonItem["attachments"]):
             rp = f"~IMAGE@{attachment['link']}" if attachment["type"] == 'img'else f'~{attachment["type"].upper()}@{attachment["link"]}'

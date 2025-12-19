@@ -5,12 +5,11 @@ from django.contrib.auth.models import User
 from core.services.types.modelsHelperTypes import ManyToManyManager
 from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
 
-
 class ProfileSettings(models.Model):
     ID = models.AutoField(primary_key=True)
-    PreferedLang = models.TextField(default='EN',null=False)
-    User = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Settings")
-
+    PreferedLang = models.ForeignKey("supportedLanguages",on_delete=models.CASCADE,null=False,related_name="Profiles")
+    User = models.OneToOneField(User,on_delete=models.CASCADE,related_name="Settings")
+#------------------
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
@@ -107,4 +106,9 @@ class classRoom_Exam(models.Model):
     ID = models.AutoField(primary_key=True)
     Exams = models.ForeignKey(Exam,on_delete=models.CASCADE)
     classRoom = models.ForeignKey(classRoom,on_delete=models.CASCADE)
+#------------------
+class supportedLanguages(models.Model):
+    Name = models.CharField(max_length=2,null=False)
+    ID = models.AutoField(primary_key=True)
+    Profiles:models.Manager["ProfileSettings"]
 #------------------

@@ -3,8 +3,8 @@ from typing import Any, Optional, cast
 from django.forms import model_to_dict
 
 from core.models.Exams_models import  Question
-from core.services.types.questionType import reverseParserOutput
-from core.services.utils.examParser import Qparser, QparserOutput, reverseQParser
+from core.services.types.questionType import QuestionToInsert
+from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFromParser
 from core.services.types.userType import IUserHelper
 
 
@@ -35,15 +35,14 @@ class QuestionServices:
             return {"login":"login is required"}
         if not lecture_id:
             return {"lecture_id":"cannot be null"}
-        questions = self.Owner.Questions.filter(lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
+        questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
         return list(questions)
     #------------------
-    def createQuestion(self,editorInput:Optional[QparserOutput],lecture_id:Optional[str]):
+    def createQuestion(self,editorInput:Optional[QuestionFromFront],lecture_id:Optional[str]):
         if not editorInput:
             return {"editorInput":"doesn't include data"}
-        checkingResult = self._handleChecking("placeHolderText","placeHolder",editorInput["answers"],lecture_id)
-        if not "success" in checkingResult:
-            return checkingResult
+        if not lecture_id:
+            return {"lecture_id":"cannot be null"}
         lecture = self.Owner.Lectures.filter(ID=lecture_id).first()
         if not lecture:
             return {"lecture":"lecture not found"}
@@ -51,7 +50,7 @@ class QuestionServices:
             return {"editorInput":"editorInput.question cannot be null"}
         if "questionType" in editorInput:
             return {"editorInput":"editorInput.questionType cannot be null"}
-        parseResult:reverseParserOutput = reverseQParser(editorInput)
+        parseResult:QuestionToInsert = toDBFromParser(editorInput)
         q = self.Owner.Questions.create(
             Text_Url=parseResult["question"],
             Type=parseResult["type"],
@@ -65,30 +64,57 @@ class QuestionServices:
             return {"fail":"creation faild"}
         return {"success":"creation success","createdItems":model_to_dict(q)}
     #------------------
-    def createQuestions(self,editorInput:Optional[list[QparserOutput]]):
+    def createQuestions(self,editorInput:Optional[list[QuestionFromFront]]):
         if not editorInput:
             return {"editorInput":"cannot be null"}
+        if len(editorInput) == 0:
+            return {"editorInput":"cannot be empty"}
         checkingResult = self._handleChecking("placeHolderText",editorInput[0]["questionType"],editorInput[0]["answers"],"1")
         if not "success" in checkingResult:
             return checkingResult
-        if len(editorInput) == 0:
-            return {"editorInput":"doesn't include data have length 0"}
         if "question" in editorInput:
             return {"editorInput":"editorInput.question cannot be null"}
         if "questionType" in editorInput:
             return {"editorInput":"editorInput.questionType cannot be null"}
         
-        parseResults:list[reverseParserOutput] = [reverseQParser(i) for i in editorInput]
-        questions = [Question(
-            OwnedBy=self.Owner,
-            Text_Url=q["question"],
-            Type=q["type"],
-            Ans=q["ans"],
-            InExamCounter = 0,
-            Lecture_id=q["lecture_id"],#real Bug
-            Ease=q["ease"]
-        ) for q in parseResults]
+        faildToCreate = []
+        parseResults: list[QuestionToInsert] = [
+            result["output"]
+            for i in editorInput
+            if (result := toDBFromParser(i))["isSuccess"]
+        ]
+        
+        questions: list[Question] = []
+        user_lectures = set(
+            int(lec)
+            for lec in self.Owner.Lectures.values_list("ID", flat=True)
+        )
+        for q in parseResults:
+            if isinstance(q["lecture_id"],str) and not q["lecture_id"].isdigit():
+                faildToCreate.append(q)
+                continue
+            #------------------
+            if not int(q["lecture_id"]) in user_lectures:
+                faildToCreate.append(q)
+                continue
+            #------------------
+            questions.append(
+                Question(
+                    OwnedBy=self.Owner,
+                    Text_Url=q["question"],
+                    Type=q["type"],
+                    Ans=q["ans"],
+                    InExamCounter=0,
+                    Lecture_id=q["lecture_id"],
+                    Ease=q["ease"],
+                )
+            )
+        #------------------
         createdItems = self.Owner.Questions.bulk_create(questions)
+        if len(faildToCreate) > 0 and len(faildToCreate) < len(parseResults):
+            return {"success":"not all you job is create but some of them it you may entered a wrong lecture ids","notCreated":faildToCreate}
+        if len(faildToCreate) > 0 and len(faildToCreate) == len(parseResults):
+            return {"faild":"you may entered a wrong lecture ids","notCreated":faildToCreate}
         if not createdItems or len(createdItems) == 0:
             return {"fail":"creation faild"}
         elif not len(createdItems) == len(questions):

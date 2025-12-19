@@ -28,7 +28,8 @@ class ShareWithEnum(IntEnum):
     def choices(cls) -> list[tuple[int, str]]:
         return [(e.value, e.name) for e in cls]
 #------------------
-class QparserOutput(TypedDict):
+class QuestionFromFront(TypedDict):
+    """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
     answers:str
     question:str # Exam with $ATTACHMENT_INDEX
     questionType:int|QuestionType
@@ -52,7 +53,8 @@ class ExamAutoGenerator(TypedDict):
     generatorSettings:AutoGenExamSetting
     questions:list[QuestionSelector]
 #------------------
-class reverseParserOutput(TypedDict):
+class QuestionToInsert(TypedDict):
+    """question here is ready to be inserted to database or alread come from database"""
     question:str # Exam within Exam language
     ans:str
     type:int|QuestionType
@@ -60,7 +62,7 @@ class reverseParserOutput(TypedDict):
     lecture_id:int
 #------------------
 T = TypeVar("T")
-class parserOutput(TypedDict,Generic[T]):
+class parserOutput(TypedDict,Generic[T]):#parser output stamp
     isSuccess:bool
     output:T
     error:Optional[dict[str,str]]

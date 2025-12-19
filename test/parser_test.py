@@ -4,12 +4,12 @@ from core.controllers.API_v0 import createQuestions
 from core.models.Exams_models import Lecture, Subject, Term, Year
 from core.services.questionService import QuestionServices
 from core.services.types.questionType import QuestionEase, QuestionType
-from core.services.utils.examParser import Qparser, QparserType
+from core.services.utils.examParser import toFrontendForm, toFrontendFormType
 from django.contrib.auth.models import User
 
 def test_one_ans_choices():
     question = "QUESTION1$$~CHOICE@1~CHOICE@2~CHOICE@3~ANS@0"
-    data:list[QparserType] = Qparser(question)
+    data:list[toFrontendFormType] = toFrontendForm(question)
     assert data[0]["questionType"] == QuestionType.MCQ_ONE_ANS.value and data[0]["choices"] and len(data[0]["choices"]) > 0
 #------------------
 def test_many_ans_choices():
@@ -21,7 +21,7 @@ def test_many_ans_choices():
     ~CHOICE@4
     ~ANS@0,2
     """
-    data:list[QparserType] = Qparser(question)
+    data:list[toFrontendFormType] = toFrontendForm(question)
     assert data[0]["questionType"] == QuestionType.MCQ_MORE_ANS.value 
     assert data[0]["choices"] and len(data[0]["choices"]) > len(data[0]["answers"].split(','))
     assert '@' in data[0]["question"]
@@ -39,7 +39,7 @@ def test_createQuestion():
     lecture = Lecture.objects.create(Name="lec1")
     user = User.objects.create_user(username="test",password="Password@123",email="test@gmail.com",last_name="lastName Test",first_name="FirstTest")
     # user = User.objects.filter(email='test@gmail.com').first()
-    question:QparserType = {
+    question:toFrontendFormType = {
         "answers":"52",
         "attachments":None,
         "choices":[],
