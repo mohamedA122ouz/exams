@@ -95,7 +95,7 @@ def userLogin(request:HttpRequest):
         #------------------
         else:
             settings:ProfileSettings = cast(ProfileSettings,user.Settings)
-            lang = cast(supportedLanguages,settings.PreferedLang).Name
+            lang = str(cast(supportedLanguages,settings.PreferedLang).Name)
         #------------------
         return ResponseHelper({"success":"successfully done","lang":lang})
     else:
