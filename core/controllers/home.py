@@ -21,12 +21,13 @@ def signup(request:HttpRequest):
 @require_POST
 @csrf_exempt
 def createUser(request:HttpRequest):
-    username = request.POST.get("username",None)
-    password = request.POST.get("password",None)
-    password2 = request.POST.get("password2",None)
-    email = request.POST.get("email",None)
-    lastName = request.POST.get("lastname",None)
-    firstName = request.POST.get("firstname",None)
+    body:dict = json.loads(request.body)
+    username = body.get("username",None)
+    password = body.get("password",None)
+    password2 = body.get("password2",None)
+    email = body.get("email",None)
+    lastName = body.get("lastname",None)
+    firstName = body.get("firstname",None)
     errorDict:dict[str,Any] = {}
     if username == None:
         errorDict["username"] = "is Null"
