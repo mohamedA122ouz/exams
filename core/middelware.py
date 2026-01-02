@@ -18,6 +18,7 @@ class LoginRequiredMiddleware:
             reverse('API_v0_login'),
             reverse('API_v0_createUser')
         ]
+    #------------------
 
     def __call__(self, request:HttpRequest):
         try:
@@ -43,3 +44,5 @@ class LoginRequiredMiddleware:
             userError = f"unexpected error ERR-ID:{errorID}"
             return JsonResponse({"fail":userError},status=500)
         #------------------
+    #------------------
+#------------------CLASS_ENDED#------------------

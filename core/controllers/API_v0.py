@@ -80,9 +80,8 @@ def showQuestions(request:HttpRequest)->JsonResponse:
 @require_POST
 @csrf_exempt
 def createQuestion(request:HttpRequest)->JsonResponse:
-    
     editor:QuestionFromFront = json.loads(request.body)
-    return ResponseHelper(QuestionServices(request.user).createQuestion(editor,lectureID))
+    return ResponseHelper(QuestionServices(request.user).createQuestion(editor))
 #------------------
 @require_POST
 @csrf_exempt
@@ -103,8 +102,11 @@ def createExam(request:HttpRequest)->JsonResponse:
         return ResponseHelper({"subject_id":"cannot be null"})
     if not "question_ids" in body:
         return ResponseHelper({"question_ids":"cannot be null"})
-    if body["settings"]:
-        settings = body["settings"]
-    output = e.pickExam(body["title"],body["subject_id"],body["question_ids"],settings)
+    if not "settings" in body:
+        return ResponseHelper({"settings":"cannot be null"})
+    settings:ExamSettings = cast(ExamSettings,body["settings"])
+    output = e._manualPickQuestion(body["title"],body["subject_id"],body["question_ids"],settings)
+    if output["isSuccess"]:
+        return ResponseHelper({"success":"exam created successfully"})
     return ResponseHelper(output)
 #------------------

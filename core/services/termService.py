@@ -15,11 +15,11 @@ class TermService:
         if not (name):
             return {"name":"term name cannot be null"}
         if not year_id:
-            return {"name":"year ID cannot be null"}
+            return {"year_id":"year ID cannot be null"}
         user = cast(IUserHelper,user)
         year = user.Years.filter(ID=year_id).first()
         if not year:
-            return {"name":"year doesn't exist"}
+            return {"year":"year doesn't exist"}
         term = user.Terms.create(Year=year,Name=name)
         if term:
             return {"success":"Term Created Successfully"}

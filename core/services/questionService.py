@@ -2,17 +2,16 @@ from typing import Any, Optional, cast
 
 from django.forms import model_to_dict
 
-from core.models.Exams_models import  Question
-from core.services.types.questionType import QuestionToInsert
+from core.models.Exams_models import  Lecture, Question
+from core.services.types.questionType import QuestionEase, QuestionToInsert, GeneralOutput
 from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFromParser
 from core.services.types.userType import IUserHelper
+from core.services.utils.generalOutputHelper import GOutput
 
 
 
 class QuestionServices:
-    MCQ = 0
-    WRITTEN_QUETION = 1
-    COMPLEX = 2
+    
     def __init__(self,user) -> None:
         self.Owner:IUserHelper = cast(IUserHelper,user)
     #------------------
@@ -38,27 +37,46 @@ class QuestionServices:
         questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
         return list(questions)
     #------------------
-    def createQuestion(self,editorInput:Optional[QuestionFromFront],lecture_id:Optional[str]):
+    def _validateQuestion(self,editorInput:Optional[QuestionFromFront])->GeneralOutput[Optional[Lecture]]:
         if not editorInput:
-            return {"editorInput":"doesn't include data"}
-        if not lecture_id:
-            return {"lecture_id":"cannot be null"}
-        lecture = self.Owner.Lectures.filter(ID=lecture_id).first()
+            return GOutput(error={"editorInput":"doesn't include data"})
+        if not "lecture_id" in editorInput:
+            return GOutput(error={"lecture_id":"cannot be null"})
+        lecture = self.Owner.Lectures.filter(ID=editorInput["lecture_id"]).first()
         if not lecture:
-            return {"lecture":"lecture not found"}
-        if "question" in editorInput:
-            return {"editorInput":"editorInput.question cannot be null"}
-        if "questionType" in editorInput:
-            return {"editorInput":"editorInput.questionType cannot be null"}
-        parseResult:QuestionToInsert = toDBFromParser(editorInput)
+            return GOutput(error={"lecture":"lecture not found"})
+        if not "question" in editorInput:
+            return GOutput(error={"editorInput":"editorInput.question cannot be null"})
+        if not"questionType" in editorInput:
+            return GOutput(error={"editorInput":"editorInput.type cannot be null"})
+        if not"ease" in editorInput or (editorInput["ease"] > QuestionEase.HARD.value and editorInput["ease"] < QuestionEase.EASY.value):
+            return GOutput(error={"editorInput":f"editorInput.ease cannot be null and must be between:{QuestionEase.EASY.value} and {QuestionEase.HARD.value}"})
+        if not"attachments" in editorInput:
+            return GOutput(error={"editorInput":"editorInput.attachmets cannot be null but can be empty"})
+        if not"choices" in editorInput:
+            return GOutput(error={"editorInput":"editorInput.choices cannot be null but can be empty"})
+        if not "answers" in editorInput or len(editorInput["answers"].strip()) == 0 or not isinstance(editorInput["answers"],str):
+            return GOutput(error={"editorInput":"editorInput.answers cannot be null or empty and must be string"})
+        #------------------
+        return GOutput(lecture)
+    #------------------
+    def createQuestion(self,editorInput:Optional[QuestionFromFront]):
+        validateOutput = self._validateQuestion(editorInput)
+        if not validateOutput["isSuccess"]:
+            return validateOutput
+        lecture:Lecture = cast(Lecture, validateOutput["output"])
+        parseResult:GeneralOutput[QuestionToInsert] = toDBFromParser(editorInput) #type:ignore Validated already from valdiator
+        if not parseResult["isSuccess"]:
+            return {"faild":parseResult["output"]}
+        #------------------
+        correctResult = parseResult["output"]
         q = self.Owner.Questions.create(
-            Text_Url=parseResult["question"],
-            Type=parseResult["type"],
-            Ans=parseResult["ans"],
-            IsInAnExam = False,
-            soln=None,
-            lecture=lecture,
-            Ease=parseResult["ease"]
+            Text_Url=correctResult["question"],
+            Type=correctResult["type"],
+            Ans=correctResult["ans"],
+            InExamCounter = 0,
+            Lecture=lecture,
+            Ease=correctResult["ease"]
         )
         if not q:
             return {"fail":"creation faild"}
@@ -82,7 +100,7 @@ class QuestionServices:
             result["output"]
             for i in editorInput
             if (result := toDBFromParser(i))["isSuccess"]
-        ]
+        ] #type:ignore if success then the output is always not None
         
         questions: list[Question] = []
         user_lectures = set(
