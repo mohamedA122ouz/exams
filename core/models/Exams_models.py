@@ -132,8 +132,10 @@ class supportedLanguages(models.Model):
 #------------------
 class solutionsSheet(models.Model):
     submitReason = models.IntegerField(choices= SubmitReason.choices())
+    specifiedTextReason = models.TextField(blank=True,null=False)
     isSubmitted = models.BooleanField(default=False,null=False)
     totalMark = models.FloatField(null=False, default=0)
     soln = models.ForeignKey(Exam,on_delete=models.CASCADE,null=False)
     exam = models.ForeignKey(Soln,on_delete=models.CASCADE,null=False)
+    student = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="solnSheet")
 #------------------

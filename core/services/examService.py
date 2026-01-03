@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional, cast
 from core.models.Exams_models import Exam, ExamBlackList, ExamQuestion, Question
+from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
@@ -188,7 +189,7 @@ class GeneralExamServices:
             return GOutput(exam)
         return GOutput(error={"faild":"something not created or something error"})
     #------------------
-    def _createExamHybrid(self,title:str,subject_id:int,input:list[QuestionFromFront | ExamAutoGenerator|int],examSettings:ExamSettings)->GeneralOutput[Optional[Exam]]:
+    def createExamHybrid(self,title:str,subject_id:int,input:list[QuestionFromFront | ExamAutoGenerator|int],examSettings:ExamSettings)->GeneralOutput[Optional[Exam]]:
         manualPick:list[int] = [] # already exist question only choosing them manually
         autoPick:list[ExamAutoGenerator] = [] # already exist question only choosing them automatically
         manualQuestions:list[QuestionFromFront] = []
@@ -249,31 +250,70 @@ class OnlineExam(GeneralExamServices):
         output = super().blackListStudent(student, exam, reason)
         if not output["isSuccess"]:
             return output
-        exam.ExamBlackListTable
+        blackListedSolnSheet = student.solnSheet.filter(student=student).first()
+        if not blackListedSolnSheet:
+            return GOutput(error={"faild":"for some reason solution sheet is null"})
+        if not reason:
+            return GOutput(error={"reason":"Text Reason cannot be null"})
+        if not student:
+            return GOutput(error={"student":"cannot be null"})
+        if not exam:
+            return GOutput(error={"exam":"cannot be null"})
+        blackListedSolnSheet.submitReason = SubmitReason.KICKED.value
+        blackListedSolnSheet.specifiedTextReason = reason
+        blackListedSolnSheet.isSubmitted = True
+        blackListedSolnSheet.save()
+        return GOutput({"success":"this exam is kicked and blacklisted"})
     #------------------
-    def _checkPassKey(self,passKey:str)->bool:
-        ...
+    def _checkPassKey(self,exam:Exam,passKey:str)->bool:
+        passK = exam.PassKey
+        if not passK:
+            return True
+        if not passKey:
+            return False
+        if passK == passKey:
+            return True
+        return False
     #------------------
     def _checkGPS(self)->bool:
         ...
     #------------------
-    def sendCredentials(self)->dict[str,str]:
-        # isCheck = self._checkPassKey()
-        # if not isCheck:
-            # return {"unauthorized":"cannot access thes exam"}
-        ...
+    def sendCredentials(self,exam:Exam,passKey:str)->dict[str,str]:
+        isCheck = self._checkPassKey(exam,passKey)
+        if not isCheck:
+            return {"unauthorized":"cannot access thes exam"}
+        return {"question1":"test1"}
     #------------------
     def autoSave(self)->None:
         ...
     #------------------
-    def submitWithReason(self,reason:str)->dict[str,str]:
-        ...
+    def submitWithReason(self,exam:Exam,student:IUserHelper,reason:str)->GeneralOutput:
+        output = super().blackListStudent(student, exam, reason)
+        if not output["isSuccess"]:
+            return output
+        blackListedSolnSheet = student.solnSheet.filter(student=student).first()
+        if not blackListedSolnSheet:
+            return GOutput(error={"faild":"for some reason solution sheet is null"})
+        if not reason:
+            return GOutput(error={"reason":"Text Reason cannot be null"})
+        if not student:
+            return GOutput(error={"student":"cannot be null"})
+        if not exam:
+            return GOutput(error={"exam":"cannot be null"})
+        blackListedSolnSheet.submitReason = SubmitReason.SUBMITTED.value
+        blackListedSolnSheet.specifiedTextReason = reason
+        blackListedSolnSheet.isSubmitted = True
+        blackListedSolnSheet.save()
+        return GOutput({"success":"this exam is kicked and blacklisted"})
     #------------------
-    def activeUsers(self)->IUserHelper:
-        ...
+    def activeUsers(self,exam:Exam)->list[IUserHelper]:
+        solnSheets = exam.solnSheet.filter(isSubmitted=False).all()
+        students = [sheet.student for sheet in solnSheets]
+        return students
     #------------------
 #------------------CLASS_ENDED#------------------
 class OfflineExam(GeneralExamServices):
+    
     def uploadExamPaper(self,bytes):
         ...
     #------------------
