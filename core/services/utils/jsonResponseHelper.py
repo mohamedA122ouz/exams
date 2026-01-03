@@ -5,13 +5,18 @@ from django.http import JsonResponse
 from django.db.models import Model
 from core.services.types.questionType import GeneralOutput
 
-def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model | list[Model] | GeneralOutput)->JsonResponse:
+def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model | list[Model] | GeneralOutput |None)->JsonResponse:
+    if not res:
+        return JsonResponse({"null":"server return null"},status=500)
     if isinstance(res,Model):
         return JsonResponse(model_to_dict(res))
     #------------------
     if "error" in res and "isSuccess" in res and "output" in res:
         _pOutput = cast(GeneralOutput,res)
-        return ResponseHelper(_pOutput["output"])
+        if _pOutput["error"] is None:
+            return ResponseHelper(_pOutput["output"])
+        if _pOutput["output"] is None:
+            return ResponseHelper(_pOutput["error"])
         #------------------
     #------------------
     if isinstance(res,list):

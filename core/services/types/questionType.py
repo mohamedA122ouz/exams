@@ -37,6 +37,18 @@ class QuestionFromFront(TypedDict):
     choices:Optional[list[str]]
     attachments:Optional[list[Attachments]]
     lecture_id:int
+    sectionName:Optional[str]
+#------------------
+class QuestionToFront(TypedDict):
+    """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
+    answers:Optional[str]
+    question:str # question with $ATTACHMENT_INDEX
+    questionType:int|QuestionType
+    ease:int
+    choices:Optional[list[str]]
+    attachments:Optional[list[Attachments]]
+    lecture_id:int
+    sectionName:Optional[str]
 #------------------
 class AutoGenExamSetting(TypedDict):
     subjectID:str

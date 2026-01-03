@@ -8,6 +8,7 @@ class SubmitReason(IntEnum):
     CONNECTION_LOST = 3
     CONNECTION_LOST_TIME_ENDED = 4
     BLACKLISTED = 5
+    CURRENTLY_ACTIVE = 6
     @classmethod
     def choices(cls):
         return [(e.value,e.name) for e in cls]

@@ -186,7 +186,6 @@ def toFrontendFormHelper(q:Question)->GeneralOutput[Optional[list[QuestionFromFr
     txt += f'~ANS@{q.Ans}'
     items =  toFrontendForm(txt)
     if items["output"] and len(items["output"]) > 0:
-        item = items["output"][0]
         return GOutput(items["output"],items["error"],items["isSuccess"]) 
     #------------------
     return GOutput(error=items["error"])
@@ -261,7 +260,7 @@ def toDBFromParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionT
         #------------------
     #------------------
     if jsonItem["choices"]:
-        jsonItem["question"] = "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
+        jsonItem["question"] += "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
     #------------------
     jsonItem["question"] = jsonItem["question"].replace(_dollar,"$")
     jsonItem["question"] = jsonItem["question"].replace(_simiColon,"#;")

@@ -3,6 +3,7 @@ from typing import Optional, cast
 from django.http import HttpRequest,JsonResponse
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
+from core.models.Exams_models import Exam
 from core.services import examService
 from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
@@ -100,13 +101,49 @@ def createExam(request:HttpRequest)->JsonResponse:
         return ResponseHelper({"title":"cannot be null"})
     if not "subject_id" in body:
         return ResponseHelper({"subject_id":"cannot be null"})
-    if not "question_ids" in body:
-        return ResponseHelper({"question_ids":"cannot be null"})
+    if not "questions" in body:
+        return ResponseHelper({"questions":"cannot be null"})
     if not "settings" in body:
         return ResponseHelper({"settings":"cannot be null"})
     settings:ExamSettings = cast(ExamSettings,body["settings"])
-    output = e._manualPickQuestion(body["title"],body["subject_id"],body["question_ids"],settings)
+    
+    output = e.createExamHybrid(body["title"],body["subject_id"],body["questions"],settings)
     if output["isSuccess"]:
         return ResponseHelper({"success":"exam created successfully"})
     return ResponseHelper(output)
+#------------------
+@require_GET
+@csrf_exempt
+def listExams(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    allExams = list(user.Exams.values(
+        "Title",
+        "ID",
+        "CreatedAt",
+        "Subject_id",
+        "Owner_id",
+        "PreventOtherTabs",
+        "Duration_min",
+        "AutoCorrect",
+        "QuestionByQuestion",
+        "ShareWith",
+        "AllowDownLoad",
+        "StartAt",
+        "EndAt",
+    ))
+    return ResponseHelper(allExams)
+#------------------
+@require_GET
+@csrf_exempt
+def showExam(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    examID = request.GET.get("exam_id",None)
+    if not examID:
+        return ResponseHelper({"exam_id":"cannot be null"})
+    examService = GeneralExamServices(user)
+    exam:Optional[Exam] = user.Exams.filter(ID=examID).first()
+    if not exam:
+        return ResponseHelper({"exam":"is not exist"})
+    frontEndData = examService.sendCredentials(exam)
+    return ResponseHelper(frontEndData)
 #------------------

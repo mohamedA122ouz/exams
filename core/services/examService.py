@@ -1,18 +1,19 @@
-from datetime import datetime
-from typing import Any, Optional, cast
-from core.models.Exams_models import Exam, ExamBlackList, ExamQuestion, Question
+from datetime import datetime, timedelta
+from typing import Any, Optional, Union, cast
+from core.models.Exams_models import Exam, ExamBlackList, ExamQuestion, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
 from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings
-from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, ShareWithEnum, GeneralOutput
+from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
-from core.services.utils.examParser import autoGeneratorParser, toDBFromParser
-from django.db.models import F
+from core.services.utils.examParser import autoGeneratorParser, toDBFromParser, toFrontendForm, toFrontendFormHelper
+from django.db.models import F,QuerySet
 from django.contrib.auth.models import User
 
 from core.services.utils.generalOutputHelper import GOutput
 
 class GeneralExamServices:
     INITIAL_SETTINGS:ExamSettings = {
+        "PassKey":None,
         "AllowDownload":True,
         "AutoCorrect":True,
         "Duration_min":60,
@@ -24,7 +25,7 @@ class GeneralExamServices:
         "ShareWith":ShareWithEnum.PRIVATE
     }
     def __init__(self,user) -> None:
-        self.Owner:IUserHelper = cast(IUserHelper,user)
+        self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
     def _resetDefaultSettings(self,exam:Exam)->dict[str,str]:
         exam.AllowDownLoad = self.INITIAL_SETTINGS["AllowDownload"]
@@ -88,7 +89,7 @@ class GeneralExamServices:
             return GOutput(error={"subject_id":"cannot be null"})
         if not Question_ids:
             return GOutput(error={"Question_ids":"cannot be null"})
-        subject = self.Owner.Subjects.filter(ID = subject_id).first()
+        subject = self.Requester.Subjects.filter(ID = subject_id).first()
         if not subject:
             return GOutput(error={"subject":"not exist"})
         if not "Duration_min" in settings:
@@ -106,7 +107,7 @@ class GeneralExamServices:
             return GOutput(error={"questions":"not exist"})
         isAlreadyCreated = False
         if not exam:
-            exam = self.Owner.Exams.create(
+            exam = self.Requester.Exams.create(
                 Title=title,
                 Subject = subject
             )
@@ -126,8 +127,8 @@ class GeneralExamServices:
         return GOutput(error={"faild":"something not created or something error"})
     #------------------
     def _assignExamToClassRoom(self,exam:Exam,classroom_id:int):
-        classRoom = self.Owner.OwnedClasses.filter(ID=classroom_id).first()
-        if classRoom:
+        classRoom = self.Requester.OwnedClasses.filter(ID=classroom_id).first()
+        if classRoom and exam.Owner == self.Requester:
             classRoom.Exams.add(exam)
             return {"success":"exam assigned"}
         #------------------
@@ -135,11 +136,13 @@ class GeneralExamServices:
     #------------------
     def _createExam(self,input:list[QuestionFromFront],title:str,subject_id:int,settings:ExamSettings,exam:Optional[Exam]=None)->GeneralOutput[Optional[Exam]]:
         """Create full exam from scratch"""
+        createdAt = datetime.now()
         if not title:
             return GOutput(error={"title":"cannot be null"})
         if not subject_id and isinstance(subject_id,int):
             return GOutput(error={"subject_id":"cannot be null and must be int"})
         questions:list[Question] = []
+        sectionsArr:list[Optional[str]] = []
         error:dict[str,Any] = {}
         for i in input:
             output = toDBFromParser(i)
@@ -148,13 +151,19 @@ class GeneralExamServices:
                 if not q:
                     return GOutput(error={"dbParser":"parser have error please contact admin"})
                 #------------------
+                if "sectionName" in i:
+                    sectionsArr.append(i["sectionName"])
+                else:
+                    sectionsArr.append(None)
                 questions.append(Question(
                     Text_Url = q["question"],
                     Type = q["type"],
                     Ans = q["ans"],
                     Lecture_id = q["lecture_id"],
                     Ease = q["ease"],
-                    InExamCounter = 1
+                    InExamCounter = 1,
+                    createdAt=createdAt,
+                    OwnedBy=self.Requester
                 ))
             #------------------
             elif not output["isSuccess"] and output["error"]:
@@ -169,19 +178,20 @@ class GeneralExamServices:
         if len(questions) != len(input):
             return GOutput(error=error)
         #------------------
-        self.Owner.Questions.bulk_create(questions)
+        createdQs = self.Requester.Questions.bulk_create(questions)
         isAlreadyCreated = False
         if not exam:
-            exam = self.Owner.Exams.create(
+            exam = self.Requester.Exams.create(
                 Title=title,
                 Subject_id = subject_id
             )
             isAlreadyCreated = True
         #------------------
         exam_questions = [
-            ExamQuestion(Exam=exam, Question=q, Order=i+1)
-            for i, q in enumerate(questions)
+            ExamQuestion(Exam=exam, Question=q, Order=i+1,sectionName=sectionsArr[i])
+            for i, q in enumerate(createdQs)
         ]
+        ExamQuestion.objects.bulk_create(exam_questions)
         if not isAlreadyCreated:
             self._setExamSettings(exam,settings)
         #------------------
@@ -189,11 +199,13 @@ class GeneralExamServices:
             return GOutput(exam)
         return GOutput(error={"faild":"something not created or something error"})
     #------------------
-    def createExamHybrid(self,title:str,subject_id:int,input:list[QuestionFromFront | ExamAutoGenerator|int],examSettings:ExamSettings)->GeneralOutput[Optional[Exam]]:
+    def createExamHybrid(self,title:str,subject_id:int,input: list[QuestionFromFront]|list[ExamAutoGenerator]|list[int],examSettings:ExamSettings)->GeneralOutput:
         manualPick:list[int] = [] # already exist question only choosing them manually
         autoPick:list[ExamAutoGenerator] = [] # already exist question only choosing them automatically
         manualQuestions:list[QuestionFromFront] = []
+        mainExam:Optional[Exam] = None
         
+        # clustering exam questions from frontend
         for q in input:
             if isinstance(q,int):
                 manualPick.append(q)
@@ -204,19 +216,60 @@ class GeneralExamServices:
                 manualQuestions.append(q)
             #------------------
         #------------------
-        questions = []
+        # create picking only the questions wihthout creating the exam
+        questions:list[Question] = []
         for q in autoPick:
-            questions += autoGeneratorParser(q,self.Owner)
-        
-        examSelectorOutput = self._manualPickQuestion(title,subject_id,manualPick,examSettings)
-        if not examSelectorOutput["isSuccess"]:
-            return examSelectorOutput # an error for sure
-        exam:Exam = examSelectorOutput["output"] #type:ignore
-        output = self._createExam(manualQuestions,title,subject_id,examSettings,exam)
-        if not output["isSuccess"]:
-            return output
-        return GOutput(exam)
+            questionOutput = autoGeneratorParser(q,self.Requester) # create the question but not the exam it self
+            if questionOutput["isSuccess"] and questionOutput["output"]:
+                questions += questionOutput["output"]
+        #------------------
+        if len(questions) > 0:
+            if not mainExam:
+                mainExam = self.Requester.Exams.create(
+                    Title=title,
+                    Subject_id = subject_id
+                )
+            #------------------
+            exam_questions = [
+                ExamQuestion(Exam=mainExam, Question=q, Order=i+1)
+                for i, q in enumerate(questions)
+            ]
+            ExamQuestion.objects.bulk_create(exam_questions)
+        #------------------
+        examSelectorOutput = self._manualPickQuestion(title,subject_id,manualPick,examSettings,mainExam)
+        if examSelectorOutput["isSuccess"] and not mainExam:
+            mainExam = examSelectorOutput["output"] # an error for sure
+        # #------------------
+        output = self._createExam(manualQuestions,title,subject_id,examSettings,mainExam)
+        if output["isSuccess"] and not mainExam:
+            mainExam = output["output"]
+        if not mainExam:
+            return GOutput(error={"faild":"exam creation faild"})
+        return GOutput({"success":"created successfully"})
     #------------------
+    # passKey not needed here but the I have to write it cause no method overload her in python
+    def sendCredentials(self,exam:Exam,passKey:Optional[str]=None)->GeneralOutput[Optional[list[QuestionToFront]]]:
+        if self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.PRIVATE.value:
+            return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
+        elif self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.CLASSROOM.value:
+            isInClassRoom = classRoom_Exam.objects.filter(exams=exam,classRoom__in=self.Requester.StudyAt.all()).first()
+            if not isInClassRoom:
+                return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
+            #------------------
+        #------------------
+        questions:QuerySet[Question,Question] = exam.Questions.all()
+        QtoFront:list[QuestionToFront] = cast(list[QuestionToFront],[])
+        for q in questions:
+            qfrontEnd = toFrontendFormHelper(q)
+            if qfrontEnd["isSuccess"] and qfrontEnd["output"] and len(qfrontEnd["output"]) == 1:
+                del qfrontEnd["output"][0]["answers"] #type:ignore
+                QtoFront.append(qfrontEnd["output"][0]) #type:ignore
+            #------------------
+            else:
+                return GOutput(error={"faild":"cannot access question"})
+            #------------------
+        #------------------
+        return GOutput(QtoFront)
     def print(self)->GeneralOutput[Any]:
         ...
     #------------------
@@ -225,7 +278,7 @@ class GeneralExamServices:
     #------------------
     def blackListStudent(self,student:IUserHelper,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
-        if student == self.Owner:
+        if student == exam.Owner:
             return GOutput(error={"blacklist":"cannot ban the owner"})
         ExamBlackList.objects.create(
             student=student,
@@ -243,6 +296,18 @@ class GeneralExamServices:
     def checkPermission(self)->dict[str,str]:
         ...
     #------------------
+    def timeIsUp(self,exam:Exam):
+        allSolutionSheets = exam.solnSheets.filter(isSubmitted=False).all()
+        currentTime = datetime.now()
+        # sheetsToUpdate:list[solutionsSheet] = cast(list[solutionsSheet],[])
+        for solnSheet in allSolutionSheets:
+            solnSheet.SubmitReason = SubmitReason.TIME_ENDED.value
+            solnSheet.IsSubmitted = True
+            solnSheet.SpecifiedTextReason = f"SYSTEM::exam time ended at {currentTime}"
+            # sheetsToUpdate.append(solnSheet)
+        #------------------
+        solutionsSheet.objects.bulk_update(allSolutionSheets,["submitReason","isSubmitted","specifiedTextReason"])
+    #------------------
 #------------------CLASS-ENDED#------------------
 
 class OnlineExam(GeneralExamServices):
@@ -259,9 +324,9 @@ class OnlineExam(GeneralExamServices):
             return GOutput(error={"student":"cannot be null"})
         if not exam:
             return GOutput(error={"exam":"cannot be null"})
-        blackListedSolnSheet.submitReason = SubmitReason.KICKED.value
-        blackListedSolnSheet.specifiedTextReason = reason
-        blackListedSolnSheet.isSubmitted = True
+        blackListedSolnSheet.SubmitReason = SubmitReason.KICKED.value
+        blackListedSolnSheet.SpecifiedTextReason = reason
+        blackListedSolnSheet.IsSubmitted = True
         blackListedSolnSheet.save()
         return GOutput({"success":"this exam is kicked and blacklisted"})
     #------------------
@@ -275,17 +340,75 @@ class OnlineExam(GeneralExamServices):
             return True
         return False
     #------------------
-    def _checkGPS(self)->bool:
+    def _checkGPS(self,exam:Exam,location:Location)->bool:
+        # need to check first if the exam even set a location
+        # if setted we need to check-it
+        # else we will return True
         ...
     #------------------
-    def sendCredentials(self,exam:Exam,passKey:str)->dict[str,str]:
+    def sendCredentials(self, exam: Exam, passKey: str | None = None) -> GeneralOutput[list[QuestionToFront] | None]:
+        if not passKey:
+            return GOutput(error={"passKey":"cannot be null"})
         isCheck = self._checkPassKey(exam,passKey)
         if not isCheck:
-            return {"unauthorized":"cannot access thes exam"}
-        return {"question1":"test1"}
+            return GOutput(error={"unauthorized":"cannot access thes exam"})
+        #------------------
+        return super().sendCredentials(exam, passKey)
     #------------------
-    def autoSave(self)->None:
-        ...
+    def autoSave(self,soln:Optional[Soln],exam:Exam,passKey:str,q:Optional[Question],student:IUserHelper,ans:str,location:Location)->GeneralOutput:
+        if not self._checkPassKey(exam,passKey):
+            return GOutput(error={"passKey":"is not correct"})
+        #------------------
+        if not self._checkGPS(exam,location):
+            return GOutput(error={"GPS":"Your location is not correctly in the place it should be"})
+        #------------------
+        currentSolnSheet = solutionsSheet.objects.filter(exam=exam,student=student).first()
+        examStartTime:datetime = exam.StartAt
+        duration:int = exam.Duration_min
+        finishTime:datetime = examStartTime + timedelta(minutes=duration)
+        if not currentSolnSheet :
+            currentSolnSheet = solutionsSheet.objects.create(
+                exam=exam,
+                student=student
+            )
+        #------------------
+        currentTime = datetime.now()
+        if finishTime <= currentTime:
+            currentSolnSheet.SubmitReason = SubmitReason.TIME_ENDED.value
+            currentSolnSheet.LastUpdate = currentTime
+            currentSolnSheet.IsSubmitted = True
+            currentSolnSheet.SpecifiedTextReason = f"SYSTEM::exam time ended at {currentTime}"
+            if not soln:
+                if not q:
+                    return GOutput(error={"question":"cannot be null when creating new solution"})
+                newSoln = Soln.objects.create(
+                    Question = q,
+                    SolvedBy=student,
+                    Content=ans,
+                    Exam=exam
+                )
+                currentSolnSheet.Ans = newSoln
+            #------------------
+            else:
+                soln.Content = ans
+                soln.save()
+            return GOutput({"success":"soln saved successfully"})
+        #------------------
+        if not soln:
+            if not q:
+                return GOutput(error={"question":"cannot be null when creating new solution"})
+            newSoln = Soln.objects.create(
+                Question = q,
+                SolvedBy=student,
+                Content=ans,
+                Exam=exam
+            )
+            currentSolnSheet.Ans = newSoln
+        #------------------
+        else:
+            soln.Content = ans
+            soln.save()
+        return GOutput({"success":"soln saved successfully"})
     #------------------
     def submitWithReason(self,exam:Exam,student:IUserHelper,reason:str)->GeneralOutput:
         output = super().blackListStudent(student, exam, reason)
@@ -300,15 +423,15 @@ class OnlineExam(GeneralExamServices):
             return GOutput(error={"student":"cannot be null"})
         if not exam:
             return GOutput(error={"exam":"cannot be null"})
-        blackListedSolnSheet.submitReason = SubmitReason.SUBMITTED.value
-        blackListedSolnSheet.specifiedTextReason = reason
-        blackListedSolnSheet.isSubmitted = True
+        blackListedSolnSheet.SubmitReason = SubmitReason.SUBMITTED.value
+        blackListedSolnSheet.SpecifiedTextReason = reason
+        blackListedSolnSheet.IsSubmitted = True
         blackListedSolnSheet.save()
         return GOutput({"success":"this exam is kicked and blacklisted"})
     #------------------
     def activeUsers(self,exam:Exam)->list[IUserHelper]:
-        solnSheets = exam.solnSheet.filter(isSubmitted=False).all()
-        students = [sheet.student for sheet in solnSheets]
+        solnSheets = exam.solnSheets.filter(isSubmitted=False).all()
+        students = [sheet.Student for sheet in solnSheets]
         return students
     #------------------
 #------------------CLASS_ENDED#------------------

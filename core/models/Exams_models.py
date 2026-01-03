@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from core.services.types.submitReason import SubmitReason
 from core.services.types.modelsHelperTypes import ManyToManyManager
 from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
+from core.services.types.transactionType import TransactionType
 # from django.db.models.fields.related_descriptors import ManyRelatedManager
 if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ManyRelatedManager
@@ -46,11 +47,12 @@ class Lecture(models.Model):
     Questions : models.Manager["Question"]
 #------------------
 class Question(models.Model):
+    createdAt = models.DateField(null=False)
     ID = models.AutoField(primary_key=True)
     Text_Url = models.CharField(max_length=400)
     Type = models.IntegerField(choices=QuestionType.choices(), default=QuestionType.MCQ_ONE_ANS)
     Ans = models.CharField(max_length=400)
-    Lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,related_name="Questions")
+    Lecture = models.ForeignKey(Lecture,on_delete=models.CASCADE,null=True,related_name="Questions")
     InExamCounter = models.IntegerField(default=0,null=False)
     Ease = models.IntegerField(choices=QuestionEase.choices(),default=QuestionEase.EASY)
     Solns:models.Manager["Soln"]
@@ -79,7 +81,7 @@ class Exam(models.Model):
     blackListedStudents = models.ManyToManyField(User,through="ExamBlackList",related_name="blackListed")
     if TYPE_CHECKING:
         ExamBlackListTable :ManyRelatedManager["ExamBlackList"]
-        solnSheet:ManyRelatedManager["solutionsSheet"]
+        solnSheets:ManyRelatedManager["solutionsSheet"]
 #------------------
 class ExamBlackList(models.Model):
     student = models.ForeignKey(User,models.CASCADE,related_name="ExamBlackListTable")
@@ -90,6 +92,7 @@ class ExamQuestion(models.Model):
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     Question = models.ForeignKey(Question, on_delete=models.CASCADE)
     Order = models.IntegerField(default=0)
+    sectionName = models.CharField(max_length=150,null=True,blank=True)
 #------------------
 class Location(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -131,11 +134,31 @@ class supportedLanguages(models.Model):
     Profiles:models.Manager["ProfileSettings"]
 #------------------
 class solutionsSheet(models.Model):
-    submitReason = models.IntegerField(choices= SubmitReason.choices())
-    specifiedTextReason = models.TextField(blank=True,null=False)
-    isSubmitted = models.BooleanField(default=False,null=False)
-    totalMark = models.FloatField(null=False, default=0)
-    soln = models.ForeignKey(Exam,on_delete=models.CASCADE,null=False)
-    exam = models.ForeignKey(Soln,on_delete=models.CASCADE,null=False)
-    student = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="solnSheet")
+    LastUpdate = models.DateTimeField(null=False,default=datetime.now())
+    SubmitReason = models.IntegerField(choices= SubmitReason.choices())
+    SpecifiedTextReason = models.TextField(blank=True,null=False)
+    IsSubmitted = models.BooleanField(default=False,null=False)
+    TotalMark = models.FloatField(null=False, default=0)
+    Ans = models.ForeignKey("Exam",on_delete=models.CASCADE,null=False)
+    Exam = models.ForeignKey(Soln,on_delete=models.CASCADE,null=False)
+    Student = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="solnSheet")
+#------------------
+
+
+#------------------MONEY-PART#------------------
+class donationTransactions(models.Model):
+    Owner = models.ForeignKey(User,on_delete=models.PROTECT,null=False)
+    OwnerName = models.CharField(max_length=150,null=False,blank=True)
+    Datetime = models.DateTimeField(null=False,default=datetime.now())
+    Method = models.CharField(max_length=50,null=False,blank=True)
+    Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
+    Type = models.IntegerField(choices=TransactionType.choices())
+#------------------
+class donationBox(models.Model):
+    balance = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
+    lastTransaction = models.ForeignKey(donationTransactions,on_delete=models.PROTECT)
+#------------------
+class balance(models.Model):
+    Owner = models.OneToOneField(User,on_delete=models.PROTECT,null=False,related_name="Balance")
+    Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
 #------------------
