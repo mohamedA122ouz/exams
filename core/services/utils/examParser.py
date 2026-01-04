@@ -5,11 +5,12 @@ from django.forms import model_to_dict
 from core.models.Exams_models import Question
 from core.services.types.attachmentType import Attachments
 from core.services.types.userType import IUserHelper
-from ..types.questionType import AutoGenExamSetting, QuestionFromFront, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, parserOutput, QuestionToInsert
+from core.services.utils.generalOutputHelper import GOutput
+from ..types.questionType import AutoGenExamSetting, GeneralOutput, QuestionFromFront, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, QuestionToInsert
 import random
 
 
-def toFrontendForm(examText:str)->parserOutput[Optional[list[QuestionFromFront]]]:
+def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]]]:
     """toFrontendForm takes data from database question and convert it to a json that could be send to the frontend 
     | you can use it later on to generate exam directly when user send you text of this language form
     """
@@ -177,44 +178,26 @@ def toFrontendForm(examText:str)->parserOutput[Optional[list[QuestionFromFront]]
         questionItem["attachments"] = attachment if len(attachment)>0 else None
         ansList.append(questionItem)
     #------------------
-    return {
-        "error":None,
-        "isSuccess":True,
-        "output":ansList
-    }
+    return GOutput(ansList)
 #------------------
-def toFrontendFormHelper(q:Question)->parserOutput[Optional[QuestionFromFront]]:
+def toFrontendFormHelper(q:Question)->GeneralOutput[Optional[list[QuestionFromFront]]]:
     """Takes Question from database and fix it to allow parser to see question answer"""
     txt = q.Text_Url
     txt += f'~ANS@{q.Ans}'
     items =  toFrontendForm(txt)
     if items["output"] and len(items["output"]) > 0:
-        item = items["output"][0]
-        return {
-            "error":items["error"],
-            "isSuccess":items["isSuccess"],
-            "output":item
-        }
+        return GOutput(items["output"],items["error"],items["isSuccess"]) 
     #------------------
-    return {
-        "error":items["error"],
-        "isSuccess":items["isSuccess"],
-        "output":None
-    }
+    return GOutput(error=items["error"])
 #------------------
-def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->parserOutput[Optional[list[dict[str,Any]]]]:
-    
+def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->GeneralOutput[Optional[list[Question]]]:
     examAGDict:ExamAutoGenerator = cast(ExamAutoGenerator,{})
     if isinstance(examJson,str):
         examJson = json.loads(examJson)
     else:
         examAGDict = examJson
     if not "generatorSettings" in examAGDict:
-        return {
-            "error":{"generatorSettings":"generator setting not exist"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"generatorSettings":"generator setting not exist"})
     #------------------
     if not "questions" in examAGDict:
         return {
@@ -225,78 +208,40 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
     #------------------
     examSettings:AutoGenExamSetting = examAGDict['generatorSettings']
     if not "yearID" in examSettings:
-        return {
-            "error":{"generatorSettings":"generatorSettings.yearID doesn't exist"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"generatorSettings":"generatorSettings.yearID doesn't exist"})
     #------------------
     if not "subjectID" in examSettings:
-        return {
-            "error":{"generatorSettings":"generatorSettings.subjectID doesn't exist"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"generatorSettings":"generatorSettings.subjectID doesn't exist"})
     #------------------
     if not "termID" in examSettings:
-        return {
-            "error":{"generatorSettings":"generatorSettings.termID doesn't exist"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"generatorSettings":"generatorSettings.termID doesn't exist"})
     #------------------
     if not "randomization" in examSettings:
-        return {
-            "error":{"generatorSettings":"generatorSettings.randomization settings doesn't exist"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"generatorSettings":"generatorSettings.randomization settings doesn't exist"})
     #------------------
     examQuestions:list[QuestionSelector] = examAGDict['questions']
     if not isinstance(examQuestions,list):
         raise "exam questions is not in list"
     subject = user.Subjects.filter(ID=examSettings['subjectID'],Term__ID=examSettings['termID'],Year__ID=examSettings['yearID']).first()
     if not subject:
-        return {
-            "error":{"subject":f"cannot find subject: {examSettings} in year:{examSettings['yearID']} and term:{examSettings['termID']}"},
-            "isSuccess":False,
-            "output":None
-        }
+        return GOutput(error={"subject":f"cannot find subject: {examSettings} in year:{examSettings['yearID']} and term:{examSettings['termID']}"})
     #------------------
-    exam = []
+    questions:list[Question] = []
     for i,question in enumerate(examQuestions):
         if not "count" in question:
-            return {
-                "error":{"questions":f"questions[{i}].count doesn't have a value (you must count the selection)"},
-                "isSuccess":False,
-                "output":None
-            }
+            return GOutput(error={"questions":f"questions[{i}].count doesn't have a value (you must count the selection)"})
         if not "ease" in question:
-            return {
-                "error":{"questions":f"questions[{i}].ease doesn't have a value"},
-                "isSuccess":False,
-                "output":None
-            }
+            return GOutput(error={"questions":f"questions[{i}].ease doesn't have a value"})
         qSet = user.Questions.filter(Ease=question["ease"])
         if not qSet:
-            return {
-                "error":{"qSet":f"is none or empty"},
-                "isSuccess":False,
-                "output":None
-            }
-        exam+=qSet[:question['count']]
+            return GOutput(error={"qSet":f"is none or empty"})
+        questions+=qSet[:question['count']]
     #------------------
-    serialized_exam = [model_to_dict(q) for q in exam]
     if examSettings['randomization']:
-        random.shuffle(serialized_exam)
-    print(serialized_exam)
-    return {
-        "error":None,
-        "isSuccess":True,
-        "output":serialized_exam
-    }
+        random.shuffle(questions)
+    return GOutput(questions)
 #------------------
-def toDBFromParser(jsonItem:QuestionFromFront)->parserOutput[QuestionToInsert]:
+def toDBFromParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionToInsert]]:
     """Takes json from frontend and parser it to allow storing it into database"""
     generateNumber:list[int] = random.sample(range(97890900,97899999),4)
     _simiColon = f"{generateNumber[2]}"
@@ -315,7 +260,7 @@ def toDBFromParser(jsonItem:QuestionFromFront)->parserOutput[QuestionToInsert]:
         #------------------
     #------------------
     if jsonItem["choices"]:
-        jsonItem["question"] = "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
+        jsonItem["question"] += "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
     #------------------
     jsonItem["question"] = jsonItem["question"].replace(_dollar,"$")
     jsonItem["question"] = jsonItem["question"].replace(_simiColon,"#;")
@@ -326,9 +271,5 @@ def toDBFromParser(jsonItem:QuestionFromFront)->parserOutput[QuestionToInsert]:
     item["ease"] = jsonItem["ease"]
     item["type"] = jsonItem["questionType"]
     item["lecture_id"] = jsonItem["lecture_id"]
-    return {
-        "error":None,
-        "isSuccess":True,
-        "output":item
-    }
+    return GOutput(item)
 #------------------
