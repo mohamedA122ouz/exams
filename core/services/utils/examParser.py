@@ -241,7 +241,7 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
         random.shuffle(questions)
     return GOutput(questions)
 #------------------
-def toDBFromParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionToInsert]]:
+def toDBFormParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionToInsert]]:
     """Takes json from frontend and parser it to allow storing it into database"""
     generateNumber:list[int] = random.sample(range(97890900,97899999),4)
     _simiColon = f"{generateNumber[2]}"

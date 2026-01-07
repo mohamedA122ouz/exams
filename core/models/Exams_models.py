@@ -7,7 +7,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.modelsHelperTypes import ManyToManyManager
 from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
 from core.services.types.transactionType import TransactionType
-# from django.db.models.fields.related_descriptors import ManyRelatedManager
+from django.db.models import Manager
 if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ManyRelatedManager
 
@@ -81,7 +81,7 @@ class Exam(models.Model):
     blackListedStudents = models.ManyToManyField(User,through="ExamBlackList",related_name="blackListed")
     if TYPE_CHECKING:
         ExamBlackListTable :ManyRelatedManager["ExamBlackList"]
-        solnSheets:ManyRelatedManager["solutionsSheet"]
+        solns:ManyRelatedManager["Exam_Soln"]
 #------------------
 class ExamBlackList(models.Model):
     student = models.ForeignKey(User,models.CASCADE,related_name="ExamBlackListTable")
@@ -92,6 +92,7 @@ class ExamQuestion(models.Model):
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     Question = models.ForeignKey(Question, on_delete=models.CASCADE)
     Order = models.IntegerField(default=0)
+    degree = models.FloatField(default=0)
     sectionName = models.CharField(max_length=150,null=True,blank=True)
 #------------------
 class Location(models.Model):
@@ -105,9 +106,12 @@ class Soln(models.Model):
     Question = models.ForeignKey(Question,on_delete=models.CASCADE,related_name="Solns")
     SolvedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
     Content = models.TextField(null=False,blank=True)
-    Exam = models.ManyToManyField(Exam,through="solutionsSheet",related_name="Solns")
+    isCorrect = models.BooleanField(null=True)
+    note = models.TextField(null=False,blank=True)
+    degree = models.FloatField(default=0.0)
+    Exam = models.ManyToManyField(Exam,through="Exam_Soln",related_name="Solns")
     if TYPE_CHECKING:
-        solnSheet:ManyRelatedManager["solutionsSheet"]
+        Exam_Soln:ManyRelatedManager["Exam_Soln"]
 #------------------
 class classRoom(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -133,17 +137,23 @@ class supportedLanguages(models.Model):
     ID = models.AutoField(primary_key=True)
     Profiles:models.Manager["ProfileSettings"]
 #------------------
-class solutionsSheet(models.Model):
+class solutionsSheet(models.Model): 
+    #this is a bug cause soln sheet must be one include all soln and question so the many to many with exam and and soln must have other class
     LastUpdate = models.DateTimeField(null=False,default=datetime.now())
     SubmitReason = models.IntegerField(choices= SubmitReason.choices())
     SpecifiedTextReason = models.TextField(blank=True,null=False)
     IsSubmitted = models.BooleanField(default=False,null=False)
     TotalMark = models.FloatField(null=False, default=0)
-    Ans = models.ForeignKey("Exam",on_delete=models.CASCADE,null=False)
-    Exam = models.ForeignKey(Soln,on_delete=models.CASCADE,null=False)
+    Exam:models.ForeignKey["Exam"] = models.ForeignKey("Exam",on_delete=models.CASCADE,null=False)
     Student = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="solnSheet")
+    Exam_Soln:Manager["Exam_Soln"]
 #------------------
 
+class Exam_Soln(models.Model):
+    Exam:models.ForeignKey["Exam"] = models.ForeignKey("Exam",null=False,on_delete=models.CASCADE,related_name="Exam_Soln")
+    SolnSheet:models.ForeignKey["solutionsSheet"] = models.ForeignKey("solutionsSheet",null=False,on_delete=models.CASCADE,related_name="Exam_Soln")
+    soln:models.ForeignKey["Soln"] = models.ForeignKey("Soln",null=False,on_delete=models.CASCADE,related_name="Exam_Soln")
+#------------------
 
 #------------------MONEY-PART#------------------
 class donationTransactions(models.Model):

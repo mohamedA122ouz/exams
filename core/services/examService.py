@@ -5,7 +5,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
-from core.services.utils.examParser import autoGeneratorParser, toDBFromParser, toFrontendForm, toFrontendFormHelper
+from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, toFrontendForm, toFrontendFormHelper
 from django.db.models import F,QuerySet
 from django.contrib.auth.models import User
 
@@ -145,7 +145,7 @@ class GeneralExamServices:
         sectionsArr:list[Optional[str]] = []
         error:dict[str,Any] = {}
         for i in input:
-            output = toDBFromParser(i)
+            output = toDBFormParser(i)
             if output["isSuccess"]:
                 q = output["output"]
                 if not q:
@@ -273,8 +273,10 @@ class GeneralExamServices:
     def print(self)->GeneralOutput[Any]:
         ...
     #------------------
-    def mark(self)->None:
-        ...
+    def mark(self,studentSheet:solutionsSheet,soln:Soln)->GeneralOutput:
+        if self.Requester != studentSheet.Exam.Owner:
+            return GOutput(error={"unauthorized":"cannot mark this exam"})
+        
     #------------------
     def blackListStudent(self,student:IUserHelper,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
@@ -297,7 +299,7 @@ class GeneralExamServices:
         ...
     #------------------
     def timeIsUp(self,exam:Exam):
-        allSolutionSheets = exam.solnSheets.filter(isSubmitted=False).all()
+        allSolutionSheets = exam.filter(isSubmitted=False).all()
         currentTime = datetime.now()
         # sheetsToUpdate:list[solutionsSheet] = cast(list[solutionsSheet],[])
         for solnSheet in allSolutionSheets:
@@ -344,7 +346,7 @@ class OnlineExam(GeneralExamServices):
         # need to check first if the exam even set a location
         # if setted we need to check-it
         # else we will return True
-        ...
+        return True
     #------------------
     def sendCredentials(self, exam: Exam, passKey: str | None = None) -> GeneralOutput[list[QuestionToFront] | None]:
         if not passKey:
@@ -363,15 +365,15 @@ class OnlineExam(GeneralExamServices):
             return GOutput(error={"GPS":"Your location is not correctly in the place it should be"})
         #------------------
         currentSolnSheet = solutionsSheet.objects.filter(exam=exam,student=student).first()
-        examStartTime:datetime = exam.StartAt
-        duration:int = exam.Duration_min
-        finishTime:datetime = examStartTime + timedelta(minutes=duration)
         if not currentSolnSheet :
             currentSolnSheet = solutionsSheet.objects.create(
                 exam=exam,
                 student=student
             )
         #------------------
+        examStartTime:datetime = exam.StartAt
+        duration:int = exam.Duration_min
+        finishTime:datetime = examStartTime + timedelta(minutes=duration)
         currentTime = datetime.now()
         if finishTime <= currentTime:
             currentSolnSheet.SubmitReason = SubmitReason.TIME_ENDED.value

@@ -1,10 +1,11 @@
+from datetime import datetime
 from typing import Any, Optional, cast
 
 from django.forms import model_to_dict
 
 from core.models.Exams_models import  Lecture, Question
-from core.services.types.questionType import QuestionEase, QuestionToInsert, GeneralOutput
-from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFromParser
+from core.services.types.questionType import QuestionEase, QuestionToFront, QuestionToInsert, GeneralOutput
+from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFormParser, toFrontendFormHelper
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
 
@@ -34,8 +35,16 @@ class QuestionServices:
             return {"login":"login is required"}
         if not lecture_id:
             return {"lecture_id":"cannot be null"}
-        questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].values()
-        return list(questions)
+        questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].all()
+        if not questions:
+            return {"questions":"not found"}
+        qlist = []
+        for q in questions:
+            output = toFrontendFormHelper(q)
+            if output["isSuccess"] and output["output"]:
+                qlist += output["output"]
+        #------------------
+        return qlist
     #------------------
     def _validateQuestion(self,editorInput:Optional[QuestionFromFront])->GeneralOutput[Optional[Lecture]]:
         if not editorInput:
@@ -48,7 +57,7 @@ class QuestionServices:
         if not "question" in editorInput:
             return GOutput(error={"editorInput":"editorInput.question cannot be null"})
         if not"questionType" in editorInput:
-            return GOutput(error={"editorInput":"editorInput.type cannot be null"})
+            return GOutput(error={"editorInput":"editorInput.questionType cannot be null"})
         if not"ease" in editorInput or (editorInput["ease"] > QuestionEase.HARD.value and editorInput["ease"] < QuestionEase.EASY.value):
             return GOutput(error={"editorInput":f"editorInput.ease cannot be null and must be between:{QuestionEase.EASY.value} and {QuestionEase.HARD.value}"})
         if not"attachments" in editorInput:
@@ -65,12 +74,13 @@ class QuestionServices:
         if not validateOutput["isSuccess"]:
             return validateOutput
         lecture:Lecture = cast(Lecture, validateOutput["output"])
-        parseResult:GeneralOutput[QuestionToInsert] = toDBFromParser(editorInput) #type:ignore Validated already from valdiator
+        parseResult:GeneralOutput[QuestionToInsert] = toDBFormParser(editorInput) #type:ignore Validated already from valdiator
         if not parseResult["isSuccess"]:
             return {"faild":parseResult["output"]}
         #------------------
         correctResult = parseResult["output"]
         q = self.Owner.Questions.create(
+            createdAt=datetime.now(),
             Text_Url=correctResult["question"],
             Type=correctResult["type"],
             Ans=correctResult["ans"],
@@ -99,7 +109,7 @@ class QuestionServices:
         parseResults: list[QuestionToInsert] = [
             result["output"]
             for i in editorInput
-            if (result := toDBFromParser(i))["isSuccess"]
+            if (result := toDBFormParser(i))["isSuccess"]
         ] #type:ignore if success then the output is always not None
         
         questions: list[Question] = []
