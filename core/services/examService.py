@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Any, Optional, Union, cast
-from core.models.Exams_models import Exam, ExamBlackList, ExamQuestion, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
+from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
 from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
@@ -114,11 +114,11 @@ class GeneralExamServices:
             isAlreadyCreated = True
         #------------------
         exam_questions = [
-            ExamQuestion(Exam=exam, Question=q, Order=i+1)
+            Exam_Questions(Exam=exam, Question=q, Order=i+1)
             for i, q in enumerate(questions)
         ]
         questions.update(InExamCounter=F("InExamCounter")+1)
-        createdObjects = ExamQuestion.objects.bulk_create(exam_questions)
+        createdObjects = Exam_Questions.objects.bulk_create(exam_questions)
         if not isAlreadyCreated:
             self._setExamSettings(exam,settings)
         #------------------
@@ -188,10 +188,10 @@ class GeneralExamServices:
             isAlreadyCreated = True
         #------------------
         exam_questions = [
-            ExamQuestion(Exam=exam, Question=q, Order=i+1,sectionName=sectionsArr[i])
+            Exam_Questions(Exam=exam, Question=q, Order=i+1,sectionName=sectionsArr[i])
             for i, q in enumerate(createdQs)
         ]
-        ExamQuestion.objects.bulk_create(exam_questions)
+        Exam_Questions.objects.bulk_create(exam_questions)
         if not isAlreadyCreated:
             self._setExamSettings(exam,settings)
         #------------------
@@ -231,10 +231,10 @@ class GeneralExamServices:
                 )
             #------------------
             exam_questions = [
-                ExamQuestion(Exam=mainExam, Question=q, Order=i+1)
+                Exam_Questions(Exam=mainExam, Question=q, Order=i+1)
                 for i, q in enumerate(questions)
             ]
-            ExamQuestion.objects.bulk_create(exam_questions)
+            Exam_Questions.objects.bulk_create(exam_questions)
         #------------------
         examSelectorOutput = self._manualPickQuestion(title,subject_id,manualPick,examSettings,mainExam)
         if examSelectorOutput["isSuccess"] and not mainExam:
@@ -282,7 +282,7 @@ class GeneralExamServices:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
         if student == exam.Owner:
             return GOutput(error={"blacklist":"cannot ban the owner"})
-        ExamBlackList.objects.create(
+        Exam_BlackList.objects.create(
             student=student,
             exams=exam,
             Reason=reason
@@ -299,16 +299,16 @@ class GeneralExamServices:
         ...
     #------------------
     def timeIsUp(self,exam:Exam):
-        allSolutionSheets = exam.filter(isSubmitted=False).all()
+        allSolutionSheets = exam.SolutionSheets.filter(isSubmitted=False)
         currentTime = datetime.now()
-        # sheetsToUpdate:list[solutionsSheet] = cast(list[solutionsSheet],[])
+        sheetsToUpdate:list[solutionsSheet] = cast(list[solutionsSheet],[])
         for solnSheet in allSolutionSheets:
             solnSheet.SubmitReason = SubmitReason.TIME_ENDED.value
             solnSheet.IsSubmitted = True
             solnSheet.SpecifiedTextReason = f"SYSTEM::exam time ended at {currentTime}"
-            # sheetsToUpdate.append(solnSheet)
+            sheetsToUpdate.append(solnSheet)
         #------------------
-        solutionsSheet.objects.bulk_update(allSolutionSheets,["submitReason","isSubmitted","specifiedTextReason"])
+        solutionsSheet.objects.bulk_update(allSolutionSheets,["SubmitReason","IsSubmitted","SpecifiedTextReason"])
     #------------------
 #------------------CLASS-ENDED#------------------
 
@@ -357,14 +357,14 @@ class OnlineExam(GeneralExamServices):
         #------------------
         return super().sendCredentials(exam, passKey)
     #------------------
-    def autoSave(self,soln:Optional[Soln],exam:Exam,passKey:str,q:Optional[Question],student:IUserHelper,ans:str,location:Location)->GeneralOutput:
+    def autoSave(self,exam:Exam,passKey:str,q:Question,student:IUserHelper,ans:str,location:Location)->GeneralOutput:
         if not self._checkPassKey(exam,passKey):
             return GOutput(error={"passKey":"is not correct"})
         #------------------
         if not self._checkGPS(exam,location):
             return GOutput(error={"GPS":"Your location is not correctly in the place it should be"})
         #------------------
-        currentSolnSheet = solutionsSheet.objects.filter(exam=exam,student=student).first()
+        currentSolnSheet = solutionsSheet.objects.filter(exam=exam,student=student,IsSubmitted=False).first()
         if not currentSolnSheet :
             currentSolnSheet = solutionsSheet.objects.create(
                 exam=exam,
@@ -374,8 +374,9 @@ class OnlineExam(GeneralExamServices):
         examStartTime:datetime = exam.StartAt
         duration:int = exam.Duration_min
         finishTime:datetime = examStartTime + timedelta(minutes=duration)
+        soln:Soln = currentSolnSheet.Solns.filter(Question=q).first()#type:ignore - because if the currentSolnSheet is not exist , it will be automatically created
         currentTime = datetime.now()
-        if finishTime <= currentTime:
+        if finishTime <= currentTime: #if time is up
             currentSolnSheet.SubmitReason = SubmitReason.TIME_ENDED.value
             currentSolnSheet.LastUpdate = currentTime
             currentSolnSheet.IsSubmitted = True
@@ -389,7 +390,12 @@ class OnlineExam(GeneralExamServices):
                     Content=ans,
                     Exam=exam
                 )
-                currentSolnSheet.Ans = newSoln
+                Exam_Soln.objects.create(
+                    Exam = exam,
+                    SolnSheet=currentSolnSheet,
+                    soln=newSoln
+                )
+                # currentSolnSheet.Exam_Soln = newSoln
             #------------------
             else:
                 soln.Content = ans
@@ -405,7 +411,7 @@ class OnlineExam(GeneralExamServices):
                 Content=ans,
                 Exam=exam
             )
-            currentSolnSheet.Ans = newSoln
+            # currentSolnSheet. = newSoln
         #------------------
         else:
             soln.Content = ans
@@ -432,7 +438,7 @@ class OnlineExam(GeneralExamServices):
         return GOutput({"success":"this exam is kicked and blacklisted"})
     #------------------
     def activeUsers(self,exam:Exam)->list[IUserHelper]:
-        solnSheets = exam.solnSheets.filter(isSubmitted=False).all()
+        solnSheets = exam.SolutionSheets.filter(isSubmitted=False).all()
         students = [sheet.Student for sheet in solnSheets]
         return students
     #------------------
