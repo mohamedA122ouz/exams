@@ -111,7 +111,8 @@ class Soln(models.Model):
     Note = models.TextField(null=False,blank=True)
     Degree = models.FloatField(default=0.0)
     SolutionSheet = models.ForeignKey("solutionsSheet",on_delete=models.CASCADE,related_name="solutions")
-    Question = models.ForeignKey("Question",on_delete=models.CASCADE,related_name="Solns")
+    Question:models.ForeignKey["Question"] = models.ForeignKey("Question",on_delete=models.CASCADE,related_name="Solns")
+    correctedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="youCorrected",null=True,blank=True)
 #------------------
 class classRoom(models.Model):
     #PAYMENT SETTINGS
@@ -243,6 +244,7 @@ class paymentLocker(models.Model):
 
 
 #-----------------------------------------------
+
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------

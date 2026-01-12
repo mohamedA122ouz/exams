@@ -27,4 +27,5 @@ class IUserHelper(Protocol):
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
         Payment_Attachment:Manager["Payment_Attachment"]
         Payment_classRoom:Manager["Payment_classRoom"]
+        youCorrected:Manager[Soln]
 #------------------

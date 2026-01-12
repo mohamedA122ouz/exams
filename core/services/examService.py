@@ -5,6 +5,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
+from core.services.utils.classRoomGards import ClassRoomGard, GardAttribute
 from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, toFrontendForm, toFrontendFormHelper
 from django.db.models import F,QuerySet
 from django.contrib.auth.models import User
@@ -27,6 +28,22 @@ class GeneralExamServices:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
+    def _RequesterValidation(self,classRoom:classRoom,attribute:GardAttribute)->GeneralOutput:
+            if self.Requester == classRoom.OwnedBy:
+                return GOutput(issuccess=True)
+            RequesterPrivileges = self.Requester.Privileges.filter(classRoom=classRoom).first()
+            if not RequesterPrivileges:
+                return GOutput(error={"unauthorized":"cannot access this resource"})
+            if RequesterPrivileges.__getattribute__(attribute.value):
+                return GOutput(issuccess=True)
+            else:
+                paidClassRoom = self.Requester.Payment_classRoom.filter(classRoom=classRoom).first()
+                if paidClassRoom:
+                    return GOutput(issuccess=True)
+                #------------------
+            #------------------
+            return GOutput(error={"unauthorized":"cannot access this resource"})
+        #------------------
     def _resetDefaultSettings(self,exam:Exam)->dict[str,str]:
         exam.AllowDownLoad = self.INITIAL_SETTINGS["AllowDownload"]
         exam.AutoCorrect = self.INITIAL_SETTINGS["AutoCorrect"]
@@ -273,10 +290,15 @@ class GeneralExamServices:
     def print(self)->GeneralOutput[Any]:
         ...
     #------------------
-    def mark(self,studentSheet:solutionsSheet,soln:Soln)->GeneralOutput:
-        if self.Requester != studentSheet.Exam.Owner:
-            return GOutput(error={"unauthorized":"cannot mark this exam"})
-        
+    @ClassRoomGard(GardAttribute.CORRECTING_STUDENTS_SOLN)
+    def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
+        output:GeneralOutput = self._RequesterValidation(classRoom,GardAttribute.CORRECTING_STUDENTS_SOLN)
+        if not output["isSuccess"]:
+            return output
+        studentSheet.LastUpdate = datetime.now()
+        soln.correctedBy = self.Requester
+        soln.Degree = degree
+        soln.IsCorrect = soln.Question == 
     #------------------
     def blackListStudent(self,student:IUserHelper,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
