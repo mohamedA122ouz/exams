@@ -36,7 +36,7 @@ class Subject(models.Model):
     Name = models.CharField(max_length=50)
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Subjects",null=True,default=None)
     Term = models.ForeignKey(Term,on_delete=models.CASCADE,related_name="Subjects")
-    Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
+    Year:models.ForeignKey["Year"] = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
     Lectures : models.Manager["Lecture"]
 #------------------
 class Lecture(models.Model):
@@ -63,10 +63,11 @@ class Question(models.Model):
 #------------------
 class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
+    TotalMark = models.FloatField(null=False,default=0)
     PassKey = models.TextField(null=True,blank=True)
     Title = models.TextField(null=True,blank=True)
     CreatedAt = models.DateTimeField(null=False,default=datetime.now())
-    Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
+    Subject:models.ForeignKey["Subject"] = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
     Owner =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
     Solns:models.Manager["Soln"]
     Locations:models.Manager["Location"]
@@ -107,7 +108,6 @@ class Soln(models.Model):
     ID = models.AutoField(primary_key=True)
     SolvedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
     Content = models.TextField(null=False,blank=True)
-    IsCorrect = models.BooleanField(null=True)
     Note = models.TextField(null=False,blank=True)
     Degree = models.FloatField(default=0.0)
     SolutionSheet = models.ForeignKey("solutionsSheet",on_delete=models.CASCADE,related_name="solutions")
@@ -185,27 +185,8 @@ class Privileges(models.Model):
     ClassRooms = models.ManyToManyField("ClassRoom")
     User = models.ManyToManyField(User)
     ChatRoom = models.ManyToManyField("chatRoom")
-    #EXAM
-    allowCreateExam = models.BooleanField(default=False,null=False)
-    allowDeleteExam = models.BooleanField(default=False,null=False)
-    allowUpdateExam = models.BooleanField(default=False,null=False)
-    allowAccessExam = models.BooleanField(default=False,null=False)
-    #SOLUTION SHEETS
-    allowAccessSolnSheet = models.BooleanField(default=False,null=False)
-    allowCorrectingSolnSheet = models.BooleanField(default=False,null=False)
-    allowBanningSolnSheet = models.BooleanField(default=False,null=False)
-    allowCreatingSolnSheet = models.BooleanField(default=False,null=False)
-    # STUDENTS ACCOUNTS
-    allowCreateStudentAccount = models.BooleanField(default=False,null=False)
-    allowAddStudentsAccount = models.BooleanField(default=False,null=False)
-    allowListStudentsAccounts = models.BooleanField(default=False,null=False)
-    allowRemoveStudentAccount = models.BooleanField(default=False,null=False)
-    # CLASSROOM ACCESS WITH/OUT PAYMENT
-    allowAccessWithoutPayment = models.BooleanField(default=False,null=False)
-    # ATTACHMENT ACCESS WITH/OUT PAYMENT
-    allowAcceessAttachemtsWithoutPayment = models.BooleanField(default=False,null=False)
-    # CHATROOM ACCESS WITH/OUT PAYMENT
-    allowAccessChatRoomWithoutPayment = models.BooleanField(default=False,null=False)
+    #All Privileges is a binary 
+    Privilege = models.IntegerField(null=False,blank=False,default=0,unique=True)
 #------------------
 class chatRoom(models.Model):
     # PAYMENT SETTINGS

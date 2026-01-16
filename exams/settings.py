@@ -128,7 +128,8 @@ CSRF_TRUSTED_ORIGINS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Africa/Cairo'
+TIME_ZONE = 'GMT'
+# TIME_ZONE = 'Africa/Cairo'
 
 USE_I18N = True
 

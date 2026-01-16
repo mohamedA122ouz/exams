@@ -285,19 +285,42 @@
     </style>
 </head>
 <body>
+    {%comment%}
+    {#
+    context:
+        "title":str,
+        "duration":int,
+        "subject":str,
+        "mark":float,
+        "sections":dict[str,list[QuestionToFront]],
+        "year":str,
+        "startAt":datetime
+    #}
+    {#
+    QuestionToFront:
+        answers:Optional[str]
+        question:str # question with $ATTACHMENT_INDEX
+        questionType:int|QuestionType
+        ease:int
+        choices:Optional[list[str]]
+        attachments:Optional[list[Attachments]]
+        lecture_id:int
+        sectionName:Optional[str]
+    #}
+    {%endcomment%}
     <div class="page">
         <!-- الهيدر -->
         <div class="header">
-            <div class="school-name">مدرسة النور الخاصة</div>
-            <div class="exam-title">امتحان الفصل الدراسي الأول</div>
+            <div class="school-name">ClassROOM test</div>
+            <div class="exam-title">{{title}}</div>
             <div class="exam-info">
-                <span><strong>المادة:</strong> الرياضيات</span>
-                <span><strong>الصف:</strong> الثالث الإعدادي</span>
-                <span><strong>الزمن:</strong> ساعتان</span>
-                <span><strong>الدرجة:</strong> 60 درجة</span>
+                <span><strong>subject:</strong> {{subject}}</span>
+                <span><strong>year:</strong> {{year}}</span>
+                <span><strong>duration:</strong> {{duration}}Min</span>
+                <span><strong>Mark:</strong> {{mark}} points</span>
             </div>
             <div class="exam-info">
-                <span><strong>التاريخ:</strong> 15/12/2024</span>
+                <span><strong>date:</strong> {{startAt}}</span>
                 <span><strong>رقم الجلوس:</strong> _________</span>
             </div>
         </div>
@@ -306,11 +329,11 @@
         <div class="student-info">
             <div class="student-info-grid">
                 <div class="info-field">
-                    <label>اسم الطالب:</label>
+                    <label>student Name:</label>
                     <div class="line"></div>
                 </div>
                 <div class="info-field">
-                    <label>الفصل:</label>
+                    <label>:</label>
                     <div class="line"></div>
                 </div>
                 <div class="info-field">
@@ -337,7 +360,7 @@
         </div>
 
         <!-- السؤال الأول: اختيار من متعدد -->
-        <div class="section">
+        <!-- <div class="section">
             <div class="section-header">
                 <span class="section-title">السؤال الأول: اختر الإجابة الصحيحة</span>
                 <span class="section-marks">(20 درجة)</span>
@@ -398,92 +421,45 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- السؤال الثاني: أكمل -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-title">السؤال الثاني: أكمل ما يلي</span>
-                <span class="section-marks">(15 درجة)</span>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">1</div>
-                    <div class="question-text">
-                        مجموع قياسات زوايا المثلث = __________ درجة
-                        <span class="question-marks">(3 درجات)</span>
+        </div> -->
+        {%for key,qlist in sections.items%}
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">{{key}}</span>
+                    <!-- <span class="section-marks">(20 درجة)</span> -->
+                </div>
+                {%for q in qlist%}
+                    <div class="question">
+                        <div class="question-header">
+                            <div class="question-number">1</div>
+                            <div class="question-text">
+                                {{q.question}}
+                                <!-- <span class="question-marks"></span> -->
+                            </div>
+                        </div>
+                        {%if q.questionType == 0 or q.questionType == 1%}
+                            <div class="choices">
+                                {%for c in q.choices%}
+                                    <div class="choice">
+                                        <div class="choice-label">{{it}}</div>
+                                        <span>{{c}}</span>
+                                    </div>
+                                {%endfor%}
+                            </div>
+                        {%else%}
+                            <div class="answer-lines">
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                            </div>
+                        {%endif%}
                     </div>
-                </div>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">2</div>
-                    <div class="question-text">
-                        العدد الأولي هو العدد الذي له __________ قاسمين فقط
-                        <span class="question-marks">(3 درجات)</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">3</div>
-                    <div class="question-text">
-                        مساحة المربع = __________ × __________
-                        <span class="question-marks">(3 درجات)</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- السؤال الثالث: مسائل -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-title">السؤال الثالث: حل المسائل التالية</span>
-                <span class="section-marks">(25 درجة)</span>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">1</div>
-                    <div class="question-text">
-                        أوجد قيمة x في المعادلة: 2x + 5 = 17
-                        <span class="question-marks">(5 درجات)</span>
-                    </div>
-                </div>
-                <div class="answer-space"></div>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">2</div>
-                    <div class="question-text">
-                        حديقة مستطيلة الشكل طولها 20 متراً وعرضها 15 متراً. احسب محيط ومساحة الحديقة.
-                        <span class="question-marks">(7 درجات)</span>
-                    </div>
-                </div>
-                <div class="answer-lines">
-                    <div class="answer-line"></div>
-                    <div class="answer-line"></div>
-                    <div class="answer-line"></div>
-                    <div class="answer-line"></div>
-                    <div class="answer-line"></div>
-                </div>
-            </div>
-
-            <div class="question">
-                <div class="question-header">
-                    <div class="question-number">3</div>
-                    <div class="question-text">
-                        اشترى أحمد 5 كتب بسعر 12 جنيهاً للكتاب الواحد، ودفع ورقة نقدية بقيمة 100 جنيه. كم يتبقى معه من النقود؟
-                        <span class="question-marks">(6 درجات)</span>
-                    </div>
-                </div>
-                <div class="answer-space"></div>
-            </div>
-        </div>
+                {%endfor%}
+            </div> 
+        {%endfor%}
+        
 
         <!-- جدول الدرجات -->
         <table class="marks-table">
@@ -517,10 +493,5 @@
             <p>المدرس: ________________ &nbsp;&nbsp;&nbsp; التوقيع: ________________</p>
         </div>
     </div>
-
-    <script>
-        // للطباعة
-        window.print();
-    </script>
 </body>
 </html>
