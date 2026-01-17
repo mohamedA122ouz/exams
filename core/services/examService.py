@@ -300,6 +300,7 @@ class GeneralExamServices:
             if qfrontEnd["isSuccess"] and qfrontEnd["output"] and len(qfrontEnd["output"]) == 1:
                 del qfrontEnd["output"][0]["answers"] #type:ignore
                 qfrontEnd["output"][0]["sectionName"] = q.sectionName
+                qfrontEnd["output"][0]["ID"] = q.Question.ID
                 QtoFront.append(qfrontEnd["output"][0]) #type:ignore
             #------------------
             else:
