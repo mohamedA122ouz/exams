@@ -277,7 +277,7 @@ class GeneralExamServices:
     #------------------
     # passKey not needed here but the I have to write it cause no method overload her in python
     def  sendCredentials(self,exam:Exam,passKey:Optional[str]=None)->GeneralOutput[Optional[list[QuestionToFront]]]:
-        if exam.PassKey and exam.PassKey != passKey:
+        if exam.PassKey and exam.PassKey != passKey and self.Requester != exam.Owner:
             return GOutput(error={"unauthorized":"cannot get exam with wrong passkey"})
         if self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.PRIVATE.value:
             return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
