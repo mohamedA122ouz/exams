@@ -6,6 +6,8 @@ from django.db.models import Model
 from core.services.types.questionType import GeneralOutput
 
 def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model | list[Model] | GeneralOutput |None)->JsonResponse:
+    if isinstance(res,list) and len(res) == 0:
+        return JsonResponse({"empty":"no entries"},status=201)
     if not res:
         return JsonResponse({"null":"server return null"},status=500)
     if isinstance(res,Model):
