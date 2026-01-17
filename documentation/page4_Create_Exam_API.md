@@ -1,10 +1,12 @@
-# 📘 Create Exam API – Frontend Documentation
+# 📘 Create Question API – Frontend Documentation
+
+*(Updated for `QuestionFromFront` model)*
 
 ## Overview
 
-This endpoint creates a complete exam including **questions**, **attachments**, and **exam settings** in a single request.
+This endpoint creates **questions** sent from the frontend and prepares them for **database insertion** or **round-trip back to the frontend**.
 
-The application uses a **custom domain language**, therefore some syntax rules **must be respected** when sending question content.
+The system uses a **custom domain language**, therefore some syntax rules **must be respected**, especially inside the `question` field.
 
 ---
 
@@ -19,10 +21,10 @@ POST /api/v0/question/create
 ## Triggered Function (Conceptual)
 
 ```ts
-createExam(payload: CreateExamPayload): Promise<void>
+createQuestion(payload: QuestionFromFront[]): Promise<void>
 ```
 
-Triggered when the frontend submits the exam creation flow.
+Triggered when the frontend submits one or more questions.
 
 ---
 
@@ -37,12 +39,12 @@ enum QuestionType {
 }
 ```
 
-| Value | Type            | Description                        |
-| ----- | --------------- | ---------------------------------- |
-| 0     | MCQ_ONE_ANS     | Single correct answer              |
-| 1     | MCQ_MORE_ANS    | Multiple correct answers           |
-| 2     | WRITTEN_QUETION | Open-ended / written               |
-| 3     | COMPLEX         | Mixed content (text + attachments) |
+| Value | Type            | Description                              |
+| ----: | --------------- | ---------------------------------------- |
+|     0 | MCQ_ONE_ANS     | Single correct answer                    |
+|     1 | MCQ_MORE_ANS    | Multiple correct answers                 |
+|     2 | WRITTEN_QUETION | Open-ended / written answer              |
+|     3 | COMPLEX         | Mixed content (text + attachments logic) |
 
 ---
 
@@ -50,9 +52,10 @@ enum QuestionType {
 
 ### Core Rules
 
-* Attachments can be added **anywhere inside the exam**
+* Attachments are **optional**
 * Attachments are **ordered**
-* `$i` represents the **index of the attachment** in the attachments array
+* `$ATTACHMENT_INDEX` inside `question` refers to the attachment index
+* Indexing is **zero-based**
 * Attachments are **typed**
 
 ---
@@ -79,54 +82,79 @@ enum QuestionType {
 
 ---
 
-## Question Object Structure
+## Question Object Structure (Final Model)
 
 ```ts
-interface Question {
-  sectionName?: string
-  question: string
+interface QuestionFromFront {
+  question: string            // may contain $ATTACHMENT_INDEX
   answers: string
-  questionType: QuestionType
+  questionType: number | QuestionType
   ease: number
   choices?: string[] | null
   attachments?: Attachment[] | null
-  lecture_id?: number | null
+  lecture_id: number
+  sectionName?: string | null
+  degree?: number | null
 }
 ```
 
 ---
 
-## Answers Format (By Question Type)
+## Field Rules (Important)
 
-| Question Type   | answers format            |
-| --------------- | ------------------------- |
-| MCQ_ONE_ANS     | `"0"`                     |
-| MCQ_MORE_ANS    | `"0,2"`                   |
-| WRITTEN_QUETION | Text                      |
-| COMPLEX         | Depends on question logic |
-
-> Answer values always use **zero-based indexing**.
+| Field          | Required | Notes                           |
+| -------------- | -------- | ------------------------------- |
+| `question`     | ✅        | Supports `$ATTACHMENT_INDEX`    |
+| `answers`      | ✅        | Format depends on question type |
+| `questionType` | ✅        | Enum value or enum reference    |
+| `ease`         | ✅        | Difficulty level                |
+| `lecture_id`   | ✅        | **Required** (not optional)     |
+| `choices`      | ❌        | Required **only for MCQ types** |
+| `attachments`  | ❌        | Optional                        |
+| `sectionName`  | ❌        | Optional grouping label         |
+| `degree`       | ❌        | Question grade / weight         |
 
 ---
 
-## ⚠️ Special Language Rule – `$` Escaping
+## Answers Format (By Question Type)
 
-### Literal `$` Handling
+| Question Type   | `answers` format |
+| --------------- | ---------------- |
+| MCQ_ONE_ANS     | `"0"`            |
+| MCQ_MORE_ANS    | `"0,2"`          |
+| WRITTEN_QUETION | Free text        |
+| COMPLEX         | Depends on logic |
 
-The application language treats `$` as a **special control symbol**
-**ONLY inside the `question` field**.
+> All MCQ answers use **zero-based indexing**
 
-To write a **literal dollar sign** in a question, it **must be escaped using `#`**.
+---
 
-| Input in `question` | Result               |
-| ------------------- | -------------------- |
-| `$`                 | ❌ Parsed / Converted |
-| `#$`                | ✅ Rendered as `$`    |
+## ⚠️ Special Language Rule – `$` Handling
+
+### `$` Control Symbol
+
+Inside the `question` field, `$` is **reserved**.
+
+* `$ATTACHMENT_INDEX` → attachment placeholder
+* Literal `$` **must be escaped**
+
+---
+
+### Escaping Literal `$`
+
+| Input | Result              |
+| ----- | ------------------- |
+| `$`   | ❌ Parsed as control |
+| `#$`  | ✅ Rendered as `$`   |
+
+---
 
 ### Scope
 
 * ✅ Applies **only** to `question`
-* ❌ Does **not** apply to `answers`, attachments, or URLs
+* ❌ Does NOT apply to `answers`, URLs, or attachments
+
+---
 
 ### Example
 
@@ -134,81 +162,65 @@ To write a **literal dollar sign** in a question, it **must be escaped using `#`
 {
   "question": "The price is #$20",
   "questionType": 2,
-  "answers": "It costs $20"
+  "answers": "It costs $20",
+  "ease": 1,
+  "lecture_id": 5
 }
 ```
 
 ---
 
-## Example Request Payload (With Attachments)
+## Example Request Payload (Aligned)
 
 ```json
-{
-  "title": "Physics Final Exam",
-  "subject_id": 2,
-  "questions": [
-    {
-      "sectionName": "MCQ",
-      "question": "Which of the following elements costs more than #$100?",
-      "questionType": 0,
-      "answers": "2",
-      "ease": 2,
-      "choices": [
-        "Oxygen",
-        "Nitrogen",
-        "Helium",
-        "Hydrogen"
-      ],
-      "attachments": [
-        {
-          "type": "img",
-          "link": "https://cdn.example.com/helium.png"
-        }
-      ],
-      "lecture_id": null
-    },
-    {
-      "sectionName": "COMPLEX",
-      "question": "Watch the video and explain the experiment",
-      "questionType": 3,
-      "answers": "For every action, there is an equal and opposite reaction",
-      "ease": 3,
-      "choices": null,
-      "attachments": [
-        {
-          "type": "youtube",
-          "link": "https://youtube.com/watch?v=abc123"
-        },
-        {
-          "type": "audio",
-          "link": "https://cdn.example.com/explanation.mp3"
-        }
-      ],
-      "lecture_id": null
-    }
-  ],
-  "settings": {
-    "Locations": null,
-    "PassKey": "kill",
-    "PreventOtherTabs": true,
-    "Duration_min": 60,
-    "AutoCorrect": true,
-    "QuestionByQuestion": false,
-    "ShareWith": 0,
-    "AllowDownload": false,
-    "StartAt": "2026-01-05T09:00:00",
-    "EndAt": "2026-01-05T10:00:00"
+[
+  {
+    "sectionName": "MCQ",
+    "question": "Which element costs more than #$100?",
+    "questionType": 0,
+    "answers": "2",
+    "ease": 2,
+    "choices": [
+      "Oxygen",
+      "Nitrogen",
+      "Helium",
+      "Hydrogen"
+    ],
+    "attachments": [
+      {
+        "type": "img",
+        "link": "https://cdn.example.com/helium.png"
+      }
+    ],
+    "lecture_id": 12,
+    "degree": 2
+  },
+  {
+    "sectionName": "COMPLEX",
+    "question": "Watch attachment $0 and explain the experiment",
+    "questionType": 3,
+    "answers": "For every action there is an equal and opposite reaction",
+    "ease": 3,
+    "attachments": [
+      {
+        "type": "youtube",
+        "link": "https://youtube.com/watch?v=abc123"
+      }
+    ],
+    "lecture_id": 12,
+    "degree": 5
   }
-}
+]
 ```
 
 ---
 
-## Frontend Rules Summary (Mandatory)
+## ✅ Frontend Rules Summary (Mandatory)
 
-* Escape `$` as `#$` **only in `question`**
+* Escape `$` as `#$` **only inside `question`**
+* Use `$ATTACHMENT_INDEX` to reference attachments
+* `lecture_id` is **mandatory**
 * `choices` must be `null` for `WRITTEN_QUETION`
-* `attachments` can exist on **any question**
-* Attachment order matters (`$i`)
-* Dates must follow **ISO 8601**
-* Indexing is **zero-based**
+* Attachment order matters
+* MCQ indexing is **zero-based**
+* `degree` represents question weight
