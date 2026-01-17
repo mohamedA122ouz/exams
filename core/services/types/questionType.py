@@ -32,6 +32,7 @@ class ShareWithEnum(IntEnum):
 #------------------
 class QuestionFromFront(TypedDict):
     """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
+    ID:Optional[int]
     answers:str
     question:str # question with $ATTACHMENT_INDEX
     questionType:int|QuestionType

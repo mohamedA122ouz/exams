@@ -42,6 +42,7 @@ class QuestionServices:
         for q in questions:
             output = toFrontendFormHelper(q)
             if output["isSuccess"] and output["output"]:
+                output["output"][0]["ID"] = q.ID
                 qlist += output["output"]
         #------------------
         return qlist
