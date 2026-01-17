@@ -82,16 +82,14 @@ WSGI_APPLICATION = 'exams.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'exams',
-        'USER': 'root',
-        'PASSWORD': 'yourStrongPassword',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'exam',
+        'USER': 'exam_user',
+        'PASSWORD': 'noor12345',
         'HOST': 'localhost',
-        'PORT': '3306',
+        'PORT': '5432',
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

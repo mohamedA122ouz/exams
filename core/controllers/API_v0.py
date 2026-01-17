@@ -98,7 +98,7 @@ def createQuestions(request:HttpRequest)->JsonResponse:
 @csrf_exempt
 def createExam(request:HttpRequest)->JsonResponse:
     body:examRequest = cast(examRequest,json.loads(request.body))
-    e = GeneralExamServices(request.user)
+    ee = GeneralExamServices(request.user)
     settings = cast(ExamSettings,{})
     if not "title" in body:
         return ResponseHelper({"title":"cannot be null"})
@@ -110,7 +110,7 @@ def createExam(request:HttpRequest)->JsonResponse:
         return ResponseHelper({"settings":"cannot be null"})
     settings:ExamSettings = cast(ExamSettings,body["settings"])
     
-    output = e.createExamHybrid(body["title"],body["subject_id"],body["questions"],settings)
+    output = ee.createExamHybrid(body["title"],body["subject_id"],body["questions"],settings)
     if output["isSuccess"]:
         return ResponseHelper({"success":"exam created successfully"})
     return ResponseHelper(output)
