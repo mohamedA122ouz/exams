@@ -89,13 +89,6 @@ def createQuestion(request:HttpRequest)->JsonResponse:
 #------------------
 @require_POST
 @csrf_exempt
-def createQuestions(request:HttpRequest)->JsonResponse:
-    body:dict = json.loads(request.body)
-    editor_input:Optional[list[QuestionFromFront]] = body.get("editor_input",None)
-    return ResponseHelper(QuestionServices(request.user).createQuestions(editor_input))
-#------------------
-@require_POST
-@csrf_exempt
 def createExam(request:HttpRequest)->JsonResponse:
     body:examRequest = cast(examRequest,json.loads(request.body))
     ee = GeneralExamServices(request.user)
