@@ -21,6 +21,7 @@ urlpatterns = [
     path('exams/create',API_v0.createExam,name="createExam"),
     path('exams/create/auto',API_v0.createQuestions,name="createQuestions"),
     path('exams',API_v0.listExams,name="listExams"),
-    path('exams/show',API_v0.showExam,name="showExam")
+    path('exams/show',API_v0.showExam,name="showExam"),
+    path('exams/download',API_v0.download,name="download")
     
 ]

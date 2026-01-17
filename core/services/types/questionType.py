@@ -21,9 +21,11 @@ class QuestionEase(IntEnum):
         return [(e.value, e.name) for e in cls]
 #------------------
 class ShareWithEnum(IntEnum):
-    CLASSROOM = 0
+    CLASSROOM_DEFAULT = 0
     ANY_ONE_WITH_LINK = 1
     PRIVATE = 2
+    CLASSROOM_PUBLIC = 3
+    
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
         return [(e.value, e.name) for e in cls]
@@ -38,6 +40,7 @@ class QuestionFromFront(TypedDict):
     attachments:Optional[list[Attachments]]
     lecture_id:int
     sectionName:Optional[str]
+    degree:Optional[float]
 #------------------
 class QuestionToFront(TypedDict):
     """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""

@@ -1,8 +1,10 @@
 import json
 from typing import Optional, cast
-from django.http import HttpRequest,JsonResponse
+from django.http import HttpRequest, HttpResponse,JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
+import pdfkit
 from core.models.Exams_models import Exam
 from core.services import examService
 from core.services.questionService import QuestionServices
@@ -12,8 +14,9 @@ from core.services.termService import TermService
 from core.services.types.examTypes import ExamSettings, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser
+from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
-from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront
+from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionToFront
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
 
@@ -147,3 +150,52 @@ def showExam(request:HttpRequest):
     frontEndData = examService.sendCredentials(exam)
     return ResponseHelper(frontEndData)
 #------------------
+# @require_GET
+# @csrf_exempt
+# def download(request:HttpRequest):
+#     user = cast(IUserHelper,request.user)
+#     exam_GEN = GeneralExamServices(user)
+#     output = exam_GEN.print()
+#     config = pdfkit.configuration(wkhtmltopdf=r"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
+#     pdf = pdfkit.from_string(output["output"],False,configuration=config)
+    
+#     res = HttpResponse(pdf,content_type="application/pdf")
+#     res["Content-Disposition"] = "inline;filename=test.pdf"
+#     # return res
+#     return render(request,"printingTemplates/examEN.html",{
+#             "test":"this is a test"
+#         })
+@require_GET
+@csrf_exempt
+def download(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    exam_GEN = GeneralExamServices(user)
+    exam = Exam.objects.first()
+    if not exam:
+        return ResponseHelper(GOutput(error={"test":"testing"}))
+    examCre = exam_GEN.sendCredentials(exam,"killer")
+    if not examCre["isSuccess"] and not examCre["output"]:
+        return ResponseHelper(examCre)
+    #------------------
+    questions:list[QuestionToFront] = examCre["output"]#type:ignore
+    sections:dict[str,list[QuestionToFront]] = {}
+    for i,q in enumerate(questions):
+        if not q["sectionName"] in sections:
+            if not q["sectionName"]:
+                q["sectionName"] = ""
+            #------------------
+            sections[q["sectionName"]] = [q]
+            continue
+        #------------------
+        sections[q["sectionName"]].append(q)
+    #------------------
+    i = render(request,"printingTemplates/examEN.html",{
+        "title":exam.Title,
+        "duration":exam.Duration_min,
+        "subject":exam.Subject.Name,
+        "mark":exam.TotalMark,
+        "sections":sections,
+        "year":exam.Subject.Year.Name,
+        "startAt":exam.StartAt,
+    })
+    return i

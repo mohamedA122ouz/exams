@@ -129,7 +129,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Africa/Cairo'
+TIME_ZONE = 'GMT'
+# TIME_ZONE = 'Africa/Cairo'
 
 USE_I18N = True
 
