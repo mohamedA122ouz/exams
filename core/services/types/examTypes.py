@@ -8,6 +8,7 @@ class Location(TypedDict):
     Yaxis:float
 #------------------
 class ExamSettings(TypedDict):
+    PassKey:Optional[str]
     Locations:Optional[Location]
     PreventOtherTabs:bool
     Duration_min:int

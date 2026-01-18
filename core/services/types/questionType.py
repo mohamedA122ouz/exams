@@ -21,22 +21,38 @@ class QuestionEase(IntEnum):
         return [(e.value, e.name) for e in cls]
 #------------------
 class ShareWithEnum(IntEnum):
-    CLASSROOM = 0
+    CLASSROOM_DEFAULT = 0
     ANY_ONE_WITH_LINK = 1
     PRIVATE = 2
+    CLASSROOM_PUBLIC = 3
+    
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
         return [(e.value, e.name) for e in cls]
 #------------------
 class QuestionFromFront(TypedDict):
     """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
+    ID:Optional[int]
     answers:str
-    question:str # Exam with $ATTACHMENT_INDEX
+    question:str # question with $ATTACHMENT_INDEX
     questionType:int|QuestionType
     ease:int
     choices:Optional[list[str]]
     attachments:Optional[list[Attachments]]
     lecture_id:int
+    sectionName:Optional[str]
+    degree:Optional[float]
+#------------------
+class QuestionToFront(TypedDict):
+    """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
+    answers:Optional[str]
+    question:str # question with $ATTACHMENT_INDEX
+    questionType:int|QuestionType
+    ease:int
+    choices:Optional[list[str]]
+    attachments:Optional[list[Attachments]]
+    lecture_id:int
+    sectionName:Optional[str]
 #------------------
 class AutoGenExamSetting(TypedDict):
     subjectID:str
@@ -62,7 +78,17 @@ class QuestionToInsert(TypedDict):
     lecture_id:int
 #------------------
 T = TypeVar("T")
-class parserOutput(TypedDict,Generic[T]):#parser output stamp
+class GeneralOutput(TypedDict,Generic[T]):#parser output stamp
+    """
+    validator parser and much more any Output need to know if success and if successed need to pass data or pass error on fail
+    
+    :var isSuccess: Description
+    :vartype isSuccess: bool
+    :var output: Description
+    :vartype output: T
+    :var error: Description
+    
+    """
     isSuccess:bool
     output:T
     error:Optional[dict[str,str]]

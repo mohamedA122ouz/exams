@@ -18,6 +18,9 @@ urlpatterns = [
     path('lectures/create',API_v0.createLectures,name="API_v0_showSubjects"),
     path('questions',API_v0.showQuestions,name="API_v0_showQuestions"),
     path('question/create',API_v0.createQuestion,name="API_v0_createQuestion"),
-    path('exams/create/manual',API_v0.createExam,name="createExam"),
-    path('exams/create/auto',API_v0.createQuestions,name="createQuestions"),
+    path('exams/create',API_v0.createExam,name="createExam"),
+    path('exams',API_v0.listExams,name="listExams"),
+    path('exam/show',API_v0.showExam,name="showExam"),
+    path('exams/download',API_v0.download,name="download")
+    
 ]

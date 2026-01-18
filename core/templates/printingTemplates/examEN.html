@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورقة امتحان</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Times New Roman', 'Traditional Arabic', serif;
+            font-size: 14pt;
+            line-height: 1.8;
+            color: #000;
+            background: #fff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* الهيدر */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .school-name {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .exam-title {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .exam-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 12pt;
+        }
+
+        /* بيانات الطالب */
+        .student-info {
+            border: 2px solid #2c3e50;
+            padding: 15px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+
+        .student-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-field label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        .info-field .line {
+            flex: 1;
+            border-bottom: 1px solid #000;
+            height: 25px;
+        }
+
+        /* التعليمات */
+        .instructions {
+            background: #fffbeb;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .instructions h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+            font-size: 14pt;
+        }
+
+        .instructions ul {
+            margin-right: 20px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+        }
+
+        /* الأسئلة */
+        .question {
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+
+        .question-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .question-number {
+            background: #2c3e50;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            flex: 1;
+            padding-top: 5px;
+        }
+
+        .question-marks {
+            color: #dc2626;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* الاختيارات */
+        .choices {
+            margin: 15px 0 15px 45px;
+        }
+
+        .choice {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .choice:hover {
+            background: #f3f4f6;
+        }
+
+        .choice-label {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #2c3e50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        /* مساحة الإجابة */
+        .answer-space {
+            border: 1px dashed #6b7280;
+            min-height: 100px;
+            margin: 15px 0 15px 45px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .answer-lines {
+            margin: 15px 0 15px 45px;
+        }
+
+        .answer-line {
+            border-bottom: 1px solid #d1d5db;
+            height: 30px;
+            margin: 5px 0;
+        }
+
+        /* القسم */
+        .section {
+            margin: 30px 0;
+            page-break-inside: avoid;
+        }
+
+        .section-header {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .section-marks {
+            font-size: 14pt;
+        }
+
+        /* الفوتر */
+        .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid #2c3e50;
+            text-align: center;
+            font-size: 11pt;
+            color: #6b7280;
+        }
+
+        /* جدول الدرجات */
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .marks-table th,
+        .marks-table td {
+            border: 2px solid #2c3e50;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .marks-table th {
+            background: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* للطباعة */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .page {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .question {
+                page-break-inside: avoid;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            @page {
+                margin: 1.5cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    {%comment%}
+    {#
+    context:
+        "title":str,
+        "duration":int,
+        "subject":str,
+        "mark":float,
+        "sections":dict[str,list[QuestionToFront]],
+        "year":str,
+        "startAt":datetime
+    #}
+    {#
+    QuestionToFront:
+        answers:Optional[str]
+        question:str # question with $ATTACHMENT_INDEX
+        questionType:int|QuestionType
+        ease:int
+        choices:Optional[list[str]]
+        attachments:Optional[list[Attachments]]
+        lecture_id:int
+        sectionName:Optional[str]
+    #}
+    {%endcomment%}
+    <div class="page">
+        <!-- الهيدر -->
+        <div class="header">
+            <div class="school-name">ClassROOM test</div>
+            <div class="exam-title">{{title}}</div>
+            <div class="exam-info">
+                <span><strong>subject:</strong> {{subject}}</span>
+                <span><strong>year:</strong> {{year}}</span>
+                <span><strong>duration:</strong> {{duration}}Min</span>
+                <span><strong>Mark:</strong> {{mark}} points</span>
+            </div>
+            <div class="exam-info">
+                <span><strong>date:</strong> {{startAt}}</span>
+                <span><strong>رقم الجلوس:</strong> _________</span>
+            </div>
+        </div>
+
+        <!-- بيانات الطالب -->
+        <div class="student-info">
+            <div class="student-info-grid">
+                <div class="info-field">
+                    <label>student Name:</label>
+                    <div class="line"></div>
+                </div>
+                <div class="info-field">
+                    <label>:</label>
+                    <div class="line"></div>
+                </div>
+                <div class="info-field">
+                    <label>رقم الجلوس:</label>
+                    <div class="line"></div>
+                </div>
+                <div class="info-field">
+                    <label>التوقيع:</label>
+                    <div class="line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- التعليمات -->
+        <div class="instructions">
+            <h3>📋 تعليمات الامتحان:</h3>
+            <ul>
+                <li>اقرأ الأسئلة جيداً قبل الإجابة</li>
+                <li>أجب عن جميع الأسئلة</li>
+                <li>اكتب بخط واضح ومقروء</li>
+                <li>استخدم قلم أزرق أو أسود فقط</li>
+                <li>غير مسموح باستخدام الآلة الحاسبة</li>
+            </ul>
+        </div>
+
+        <!-- السؤال الأول: اختيار من متعدد -->
+        <!-- <div class="section">
+            <div class="section-header">
+                <span class="section-title">السؤال الأول: اختر الإجابة الصحيحة</span>
+                <span class="section-marks">(20 درجة)</span>
+            </div>
+
+            <div class="question">
+                <div class="question-header">
+                    <div class="question-number">1</div>
+                    <div class="question-text">
+                        ما هو ناتج 5 + 3 × 2؟
+                        <span class="question-marks">(درجتان)</span>
+                    </div>
+                </div>
+                <div class="choices">
+                    <div class="choice">
+                        <div class="choice-label">أ</div>
+                        <span>16</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">ب</div>
+                        <span>11</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">ج</div>
+                        <span>10</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">د</div>
+                        <span>13</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">
+                    <div class="question-number">2</div>
+                    <div class="question-text">
+                        الجذر التربيعي للعدد 144 هو:
+                        <span class="question-marks">(درجتان)</span>
+                    </div>
+                </div>
+                <div class="choices">
+                    <div class="choice">
+                        <div class="choice-label">أ</div>
+                        <span>10</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">ب</div>
+                        <span>12</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">ج</div>
+                        <span>14</span>
+                    </div>
+                    <div class="choice">
+                        <div class="choice-label">د</div>
+                        <span>16</span>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+        {%for key,qlist in sections.items%}
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">{{key}}</span>
+                    <!-- <span class="section-marks">(20 درجة)</span> -->
+                </div>
+                {%for q in qlist%}
+                    <div class="question">
+                        <div class="question-header">
+                            <div class="question-number">1</div>
+                            <div class="question-text">
+                                {{q.question}}
+                                <!-- <span class="question-marks"></span> -->
+                            </div>
+                        </div>
+                        {%if q.questionType == 0 or q.questionType == 1%}
+                            <div class="choices">
+                                {%for c in q.choices%}
+                                    <div class="choice">
+                                        <div class="choice-label">{{it}}</div>
+                                        <span>{{c}}</span>
+                                    </div>
+                                {%endfor%}
+                            </div>
+                        {%else%}
+                            <div class="answer-lines">
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                                <div class="answer-line"></div>
+                            </div>
+                        {%endif%}
+                    </div>
+                {%endfor%}
+            </div> 
+        {%endfor%}
+        
+
+        <!-- جدول الدرجات -->
+        <table class="marks-table">
+            <thead>
+                <tr>
+                    <th>السؤال الأول</th>
+                    <th>السؤال الثاني</th>
+                    <th>السؤال الثالث</th>
+                    <th>المجموع</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>20</td>
+                    <td>15</td>
+                    <td>25</td>
+                    <td>60</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- الفوتر -->
+        <div class="footer">
+            <p>مع أطيب التمنيات بالتوفيق والنجاح</p>
+            <p>المدرس: ________________ &nbsp;&nbsp;&nbsp; التوقيع: ________________</p>
+        </div>
+    </div>
+</body>
+</html>
