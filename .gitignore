@@ -28,7 +28,10 @@ Temporary Items
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+core/__pycache__/*
+core/models/__pycache__/*
+core/controllers/__pycache__/*
+core/migrations/__pycache__/*
 # C extensions
 *.so
 
