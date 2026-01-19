@@ -3,13 +3,13 @@ from typing import Optional, TypedDict
 from core.services.types.questionType import ShareWithEnum
 
 
-class Location(TypedDict):
+class Location_Type(TypedDict):
     Xaxis:float
     Yaxis:float
 #------------------
 class ExamSettings(TypedDict):
     PassKey:Optional[str]
-    Locations:Optional[Location]
+    Locations:Optional[Location_Type]
     PreventOtherTabs:bool
     Duration_min:int
     AutoCorrect:bool

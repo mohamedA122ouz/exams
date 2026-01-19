@@ -102,6 +102,7 @@ class Location(models.Model):
     ID = models.AutoField(primary_key=True)
     Xaxis = models.FloatField()
     Yaxis = models.FloatField()
+    buildingArea = models.FloatField(null=False)
     Exam = models.ForeignKey(Exam,on_delete=models.CASCADE,related_name="Locations")
 #------------------
 class Soln(models.Model):
@@ -122,14 +123,11 @@ class classRoom(models.Model):
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
     OwnedBy = models.OneToOneField(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
-    Teacher = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Teaches",null=True)
-    Students = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="StudyAt",null=True)
-    Admin = models.ForeignKey(User,on_delete=models.DO_NOTHING,related_name="Administrate",null=True)
     Attachments = models.FileField(upload_to="uploads/")
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
     if TYPE_CHECKING:
-        Privileges: ManyRelatedManager["Privileges"]
+        Privileges: models.ForeignKey["Privileges"]
         Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
 #------------------
@@ -182,11 +180,9 @@ class Privileges(models.Model):
     # Privileges
     Name = models.CharField(null=False,max_length=50)
     # RELATIONS
-    ClassRooms = models.ManyToManyField("ClassRoom")
-    User = models.ManyToManyField(User)
-    ChatRoom = models.ManyToManyField("chatRoom")
-    #All Privileges is a binary 
-    Privilege = models.IntegerField(null=False,blank=False,default=0,unique=True)
+    ClassRooms = models.ForeignKey("ClassRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
+    User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Privileges",default=1)
+    Privilege = models.IntegerField(null=False,blank=False,default=0)
 #------------------
 class chatRoom(models.Model):
     # PAYMENT SETTINGS
@@ -197,8 +193,8 @@ class chatRoom(models.Model):
     Name = models.CharField(max_length=50,null=False)
     classRoom = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="chatRooms")
     if TYPE_CHECKING:
+        # Privileges:ManyRelatedManager["Privileges"]
         Messages:Manager["messages"]
-        Privileges:ManyRelatedManager["Privileges"]
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
 #------------------
 class Payment_ChatRoom(models.Model):
