@@ -122,7 +122,7 @@ class classRoom(models.Model):
     PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
-    Titile = models.CharField(max_length=50,null=True,default="")
+    Title = models.CharField(max_length=50,null=True,default="")
     OwnedBy = models.OneToOneField(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")

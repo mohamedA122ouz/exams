@@ -2,18 +2,21 @@ from typing import cast
 from core.models.Exams_models import ClassRoomAttachment, Exam, Privileges, chatRoom, classRoom
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
+from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.priviliages import UserPrivileges
 import magic
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from utils.allowedFormates import ALLOWED_MIME_TYPES
+from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
 
 class classRoomService:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
     def _RequesterValidation(self,classRoom:classRoom,attribute:UserPrivileges)->GeneralOutput:
+        if not classRoom:
+            return GOutput(issuccess=False)
         if self.Requester == classRoom.OwnedBy:
             return GOutput(issuccess=True)
         RequesterPrivileges = self.Requester.Privileges.filter(classRoom=classRoom).first()
@@ -29,25 +32,32 @@ class classRoomService:
         #------------------
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
-    def editSettings(self,currentRoom:classRoom,paymentAmount:int,PaymentExpireInterval_MIN:int,PaymentAccessMaxCount:int,HideFromSearch:bool):
-        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES):
-            return GOutput(error={"settings":"cannot set setting from non owner"})
+    def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend):
+        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
+            return GOutput(error={"settings":"cannot set setting from null owner"})
+        #------------------
+        if not body:
+            return GOutput(error={"settings":"cannot set setting from null owner"})
         #------------------
         changed = False
-        if currentRoom.paymentAmount != paymentAmount:
-            currentRoom.paymentAmount = paymentAmount
+        if body["paymentAmount"] and currentRoom.paymentAmount != body["paymentAmount"]:
+            currentRoom.paymentAmount = body["paymentAmount"]
             changed =True
         #------------------
-        if currentRoom.PaymentExpireInterval_MIN != PaymentExpireInterval_MIN:
-            currentRoom.PaymentExpireInterval_MIN = PaymentExpireInterval_MIN
+        if body["PaymentExpireInterval_MIN"] and currentRoom.PaymentExpireInterval_MIN != body["PaymentExpireInterval_MIN"]:
+            currentRoom.PaymentExpireInterval_MIN = body["PaymentExpireInterval_MIN"]
             changed =True
         #------------------
-        if currentRoom.PaymentAccessMaxCount != PaymentAccessMaxCount:
-            currentRoom.PaymentAccessMaxCount = PaymentAccessMaxCount
+        if body["PaymentAccessMaxCount"] and currentRoom.PaymentAccessMaxCount != body["PaymentAccessMaxCount"]:
+            currentRoom.PaymentAccessMaxCount = body["PaymentAccessMaxCount"]
             changed = True
         #------------------
-        if currentRoom.HideFromSearch != HideFromSearch:
-            currentRoom.HideFromSearch = HideFromSearch
+        if body["HideFromSearch"] and currentRoom.HideFromSearch != body["HideFromSearch"]:
+            currentRoom.HideFromSearch = body["HideFromSearch"]
+            changed = True
+        #------------------
+        if body["title"] and currentRoom.Title != body["title"]:
+            currentRoom.Title = body["title"]
             changed = True
         #------------------
         if changed:
@@ -55,27 +65,46 @@ class classRoomService:
         #------------------
         return GOutput(issuccess=changed)
     #------------------
-    def createClassRoom(self,title:str,HideFromSearch:bool=True,paymentAmount:float=0,PaymentExpireInterval_MIN:int=0,PaymentAccessMaxCount:int=0)->GeneralOutput:
+    def createClassRoom(self,body:ClassRoomFromFrontend)->GeneralOutput:
+        if not "title" in body:
+            return GOutput(error={"title":"cannot be null"})
+        #------------------
+        if not "HideFromSearch" in body:
+            return GOutput(error={"HideFromSearch":"cannot be null"})
+        #------------------
+        if not "paymentAmount" in body:
+            return GOutput(error={"paymentAmount":"cannot be null"})
+        #------------------
+        if not "PaymentExpireInterval_MIN" in body:
+            return GOutput(error={"PaymentExpireInterval_MIN":"cannot be null"})
+        #------------------
+        if not "PaymentAccessMaxCount" in body:
+            return GOutput(error={"PaymentAccessMaxCount":"cannot be null"})
+        #------------------
         mainchatRoom = chatRoom.objects.create(
             Name="Main Room",
             paymentAmount=0,
             PaymentExpireInterval_MIN=0,
             PaymentAccessMaxCount=0
         )
-        mainRoom = classRoom.objects.create(
+        classRoom.objects.create(
             OwnedBy=self.Requester,
-            HideFromSearch=HideFromSearch,
-            Title=title,
-            paymentAmount=paymentAmount,
-            PaymentExpireInterval_MIN=PaymentExpireInterval_MIN,
-            PaymentAccessMaxCount=PaymentAccessMaxCount,
+            HideFromSearch=body["HideFromSearch"],
+            Title=body["title"],
+            paymentAmount=body["paymentAmount"],
+            PaymentExpireInterval_MIN=body["PaymentExpireInterval_MIN"],
+            PaymentAccessMaxCount=body["PaymentAccessMaxCount"],
             chatRoom=mainchatRoom
         )
         return GOutput(issuccess=True)
     #------------------
     def defineRoles(self,currentRoom:classRoom,roleTitle,privileges:UserPrivileges):
-        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES):
+        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot define access rules"})
+        if not roleTitle:
+            return GOutput(error={"roleTitle":"cannot be null"})
+        if not privileges:
+            return GOutput(error={"privileges":"cannot be null"})
         currentRoom.Privileges.objects.create(
             Name=roleTitle,
             Privilege=privileges
@@ -83,7 +112,7 @@ class classRoomService:
         return GOutput({"success":"Role create successfully"})
     #------------------
     def addUser(self, currentRoom:classRoom,role:Privileges,user:IUserHelper):
-        if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS):
+        if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add User"})
         #------------------
         if not currentRoom.Privileges.objects.contains(role):
@@ -93,11 +122,15 @@ class classRoomService:
         return GOutput({"success":"user created with specified role successfully"})
     #------------------
     def addExam(self,currentRoom:classRoom,Exam:Exam):
-        if not self._RequesterValidation(currentRoom,UserPrivileges.CREATE_EXAM):
+        if not self._RequesterValidation(currentRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add or create Exam"})
+        if not Exam:
+            return GOutput(error={"Exam":"cannot be null"})
         currentRoom.Exams.add(Exam)
     #------------------
     def addAttachment(self,currentRoom:classRoom,file:InMemoryUploadedFile,paymentAmount:float=0,PaymentExpireInterval_MIN:int=0,PaymentAccessMaxCount:int=0):
+        if not self._RequesterValidation(currentRoom,UserPrivileges.UPLOAD_ATTACHMENT)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot upload attachement"})
         mimeFile = magic.from_buffer(file.read(2048),mime=True) 
         file.seek(0)
         if not mimeFile in ALLOWED_MIME_TYPES:
@@ -111,5 +144,4 @@ class classRoomService:
         )
         return GOutput({"success":"attachment uploaded successfully"})
     #------------------
-
 #------------------CLASS_ENDED#------------------
