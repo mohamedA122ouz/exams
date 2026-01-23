@@ -118,18 +118,31 @@ class Soln(models.Model):
 class classRoom(models.Model):
     #PAYMENT SETTINGS
     paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)    
+    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
     PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
+    Titile = models.CharField(max_length=50,null=True,default="")
     OwnedBy = models.OneToOneField(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
-    Attachments = models.FileField(upload_to="uploads/")
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
     if TYPE_CHECKING:
         Privileges: models.ForeignKey["Privileges"]
         Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
+        Attachments: Manager["ClassRoomAttachment"]
+#------------------
+class ClassRoomAttachment(models.Model):
+    #PAYMENT SETTINGS
+    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
+    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
+    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+    # ATTACHMENT FIELDS
+    ID = models.AutoField(primary_key=True)
+    Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
+    classRoom = models.ForeignKey(classRoom,on_delete=models.CASCADE,related_name="Attachments")
+    if TYPE_CHECKING:
+        Payment_Attachment:Manager["Payment_Attachment"]
 #------------------
 class Payment_classRoom(models.Model):
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
@@ -181,7 +194,7 @@ class Privileges(models.Model):
     Name = models.CharField(null=False,max_length=50)
     # RELATIONS
     ClassRooms = models.ForeignKey("ClassRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
-    User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Privileges",default=1)
+    User = models.ManyToManyField(User,related_name="Privileges",default=1)
     Privilege = models.IntegerField(null=False,blank=False,default=0)
 #------------------
 class chatRoom(models.Model):
@@ -207,6 +220,7 @@ class Payment_ChatRoom(models.Model):
 class messages(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     text = models.TextField(null=False)
+    classRoom = models.ForeignKey("classRoom",on_delete=models.CASCADE)
 #------------------
 class paymentLocker(models.Model):
     totalAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
@@ -221,7 +235,6 @@ class paymentLocker(models.Model):
 
 
 #-----------------------------------------------
-
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------

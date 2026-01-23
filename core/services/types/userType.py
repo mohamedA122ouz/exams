@@ -20,7 +20,7 @@ class IUserHelper(Protocol):
     if TYPE_CHECKING:
         blackListed:ManyRelatedManager[Exam]
         ExamBlackListTable:ManyRelatedManager["Exam_BlackList"]
-        Privileges:Manager["Privileges"]
+        Privileges:ManyRelatedManager["Privileges"]
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
         Payment_Attachment:Manager["Payment_Attachment"]
         Payment_classRoom:Manager["Payment_classRoom"]
