@@ -145,7 +145,22 @@ class classRoomService:
         return GOutput({"success":"attachment uploaded successfully"})
     #------------------
     def listClassRooms(self,limit:int=100,last_id:int=0)->GeneralOutput:
-        classRooms = self.Requester.OwnedClasses.filter(ID__gt=last_id)[:limit].order_by('ID')
-        return GOutput(classRooms)
+        classRooms = self.Requester.OwnedClasses.filter(ID__gt=last_id)[:limit].order_by('ID').values('Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
+        return GOutput(list(classRooms))
+    #------------------
+    def listUsersWithPrivileges(self,currentClassRoom:classRoom,privilege:UserPrivileges,limit:int=100,last_id:int=0):
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS):
+            return GOutput(error={"unauthorized":"cannot access this classRoom"})
+        currentPriv = currentClassRoom.Privileges.objects.filter(Privilege=privilege).first()
+        if not currentPriv:
+            return GOutput(error={"privilege":"not exist privilege"})
+        #------------------
+        users = currentPriv.User.filter(ID__gt=last_id).order_by('ID')[:limit].values('ID', 'username', 'email')
+        return GOutput(list(users))
+    #------------------
+    def listPrivileges(self,currentClassRoom:classRoom)->GeneralOutput:
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS):
+            return GOutput(error={"unauthorized":"cannot access this classRoom"})
+        return GOutput(list(currentClassRoom.Privileges.objects.values('Name','id')))
     #------------------
 #------------------CLASS_ENDED#------------------
