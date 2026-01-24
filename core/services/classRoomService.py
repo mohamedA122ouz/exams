@@ -110,7 +110,7 @@ class classRoomService:
             Privilege=privileges
         )
         return GOutput({"success":"Role create successfully"})
-    #------------------
+    #-----------------
     def addUser(self, currentRoom:classRoom,role:Privileges,user:IUserHelper)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add User"})

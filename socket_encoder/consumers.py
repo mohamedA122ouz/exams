@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from socoket_utils.group_service import GroupService
-from socoket_utils.massege_serialzer import MessageSerializer
-from socoket_utils.hub_handler import HubHandler
+from socket_encoder.socoket_utils.group_service import GroupService
+from socket_encoder.socoket_utils.massege_serialzer import MessageSerializer
+from socket_encoder.socoket_utils.hub_handler import HubHandler
 
 class HubConsumer(AsyncWebsocketConsumer):
     GROUP_NAME = "hub_group"
