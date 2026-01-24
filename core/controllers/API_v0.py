@@ -186,6 +186,7 @@ def createClassRoom(request:HttpRequest):
     body = cast(ClassRoomFromFrontend,json.loads(request.body))
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
+    # automatically connect the teacher or the class room owner to the class room live session
     return ResponseHelper(clService.createClassRoom(body))
 #------------------
 @require_GET
