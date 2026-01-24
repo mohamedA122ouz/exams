@@ -32,7 +32,7 @@ class classRoomService:
         #------------------
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
-    def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend):
+    def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
             return GOutput(error={"settings":"cannot set setting from null owner"})
         #------------------
@@ -98,7 +98,7 @@ class classRoomService:
         )
         return GOutput(issuccess=True)
     #------------------
-    def defineRoles(self,currentRoom:classRoom,roleTitle,privileges:UserPrivileges):
+    def defineRoles(self,currentRoom:classRoom,roleTitle,privileges:UserPrivileges)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot define access rules"})
         if not roleTitle:
@@ -111,7 +111,7 @@ class classRoomService:
         )
         return GOutput({"success":"Role create successfully"})
     #------------------
-    def addUser(self, currentRoom:classRoom,role:Privileges,user:IUserHelper):
+    def addUser(self, currentRoom:classRoom,role:Privileges,user:IUserHelper)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add User"})
         #------------------
@@ -128,7 +128,7 @@ class classRoomService:
             return GOutput(error={"Exam":"cannot be null"})
         currentRoom.Exams.add(Exam)
     #------------------
-    def addAttachment(self,currentRoom:classRoom,file:InMemoryUploadedFile,paymentAmount:float=0,PaymentExpireInterval_MIN:int=0,PaymentAccessMaxCount:int=0):
+    def addAttachment(self,currentRoom:classRoom,file:InMemoryUploadedFile,paymentAmount:float=0,PaymentExpireInterval_MIN:int=0,PaymentAccessMaxCount:int=0)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges.UPLOAD_ATTACHMENT)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot upload attachement"})
         mimeFile = magic.from_buffer(file.read(2048),mime=True) 
@@ -143,5 +143,9 @@ class classRoomService:
             classRoom=currentRoom
         )
         return GOutput({"success":"attachment uploaded successfully"})
+    #------------------
+    def listClassRooms(self,limit:int=100,last_id:int=0)->GeneralOutput:
+        classRooms = self.Requester.OwnedClasses.filter(ID__gt=last_id)[:limit].order_by('ID')
+        return GOutput(classRooms)
     #------------------
 #------------------CLASS_ENDED#------------------

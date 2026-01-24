@@ -35,7 +35,7 @@ class QuestionServices:
             return {"login":"login is required"}
         if not lecture_id:
             return {"lecture_id":"cannot be null"}
-        questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit].all()
+        questions = self.Owner.Questions.filter(Lecture__ID=lecture_id,ID__gt=last_id).order_by("ID")[:limit]
         if not questions:
             return {"questions":"not found"}
         qlist = []

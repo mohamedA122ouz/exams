@@ -188,3 +188,11 @@ def createClassRoom(request:HttpRequest):
     clService = classRoomService(user)
     return ResponseHelper(clService.createClassRoom(body))
 #------------------
+@require_GET
+@csrf_exempt
+def listclassRooms(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    clService = classRoomService(user)
+    return ResponseHelper(clService.listClassRooms())
+#------------------
+
