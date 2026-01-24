@@ -34,6 +34,8 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "core",
     "corsheaders",
+    "socket_encoder",
 ]
 
 
@@ -75,6 +78,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'exams.wsgi.application'
+ASGI_APPLICATION = 'exams.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database
@@ -83,15 +93,13 @@ WSGI_APPLICATION = 'exams.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME"),
-        'USER': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST"),
-        'PORT': os.getenv("DB_PORT"),
+        'NAME': 'exam',
+        'USER': 'exam_user',
+        'PASSWORD': 'noor12345',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
