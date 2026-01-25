@@ -8,7 +8,7 @@ from core.services.types.questionType import QuestionEase, QuestionType, ShareWi
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
 if TYPE_CHECKING:
-    from django.db.models.fields.related_descriptors import ManyRelatedManager
+    from django.db.models.fields.related_descriptors import ManyRelatedManager,ForwardOneToOneDescriptor
 
 
 
@@ -16,6 +16,7 @@ class ProfileSettings(models.Model):
     ID = models.AutoField(primary_key=True)
     PreferedLang = models.ForeignKey("supportedLanguages",on_delete=models.CASCADE,null=False,related_name="Profiles")
     User = models.OneToOneField(User,on_delete=models.CASCADE,related_name="Settings")
+    Warnings = models.SmallIntegerField(default=3)
 #------------------
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -130,7 +131,7 @@ class classRoom(models.Model):
         Privileges: models.ForeignKey["Privileges"]
         Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
-        Attachments: Manager["ClassRoomAttachment"]
+        Attachments: ManyRelatedManager["ClassRoomAttachment"]
 #------------------
 class ClassRoomAttachment(models.Model):
     #PAYMENT SETTINGS
@@ -140,7 +141,8 @@ class ClassRoomAttachment(models.Model):
     # ATTACHMENT FIELDS
     ID = models.AutoField(primary_key=True)
     Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
-    classRoom = models.ForeignKey(classRoom,on_delete=models.CASCADE,related_name="Attachments")
+    classRoom = models.ManyToManyField(classRoom,related_name="Attachments")
+    attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
     if TYPE_CHECKING:
         Payment_Attachment:Manager["Payment_Attachment"]
 #------------------
@@ -151,21 +153,13 @@ class Payment_classRoom(models.Model):
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
     classRoom:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
 #------------------
-class Attachments(models.Model):
-    # PAYMENT SETTINGS
-    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
-    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
-    # ATTACHMENTS FIELDS
-    path = models.FileField(upload_to="uploads/")
-    title = models.TextField(null=False,blank=True)
-#------------------
+
 class Payment_Attachment(models.Model):
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
     AccessCounter = models.BigIntegerField(null=True,blank=True)
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
-    attachmet = models.ForeignKey("Attachments",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
+    classRoomAttachment = models.ForeignKey("ClassRoomAttachment",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
 #------------------
 class classRoom_Exam(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -231,7 +225,15 @@ class paymentLocker(models.Model):
         Payment_Attachment:Manager["Payment_Attachment"]
         Payment_classRoom:Manager["Payment_classRoom"]
 #------------------
-
+class AttachmentLicence(models.Model):
+    ID  = models.AutoField(primary_key=True)
+    owner = models.OneToOneField(User,on_delete=models.CASCADE,related_name='attachmentLicence')
+    uploadTime = models.DateTimeField(auto_now=True)
+    FileFingerPrint = models.TextField()
+    RequireSecurity = models.BooleanField(default=False)
+    if TYPE_CHECKING:
+        classRoomAttachment:ClassRoomAttachment
+#------------------
 
 
 #-----------------------------------------------

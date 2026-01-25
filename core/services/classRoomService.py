@@ -1,11 +1,12 @@
 from typing import cast
-from core.models.Exams_models import ClassRoomAttachment, Exam, Privileges, chatRoom, classRoom
+from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Exam, Privileges, chatRoom, classRoom
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.priviliages import UserPrivileges
 import magic
+import hashlib
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
@@ -135,14 +136,33 @@ class classRoomService:
         file.seek(0)
         if not mimeFile in ALLOWED_MIME_TYPES:
             return GOutput(error={"unauthorized":"cannot upload this type of attachments"})
-        ClassRoomAttachment.objects.create(
-            paymentAmount=paymentAmount,
-            PaymentExpireInterval_MIN=PaymentExpireInterval_MIN,
-            PaymentAccessMaxCount = PaymentAccessMaxCount,
-            Attachments=file,
-            classRoom=currentRoom
-        )
-        return GOutput({"success":"attachment uploaded successfully"})
+        hasher = hashlib.sha256()
+        for chunk in iter(lambda: file.read(8192), b""):
+            hasher.update(chunk)
+        file.seek(0)
+        file_hash = hasher.hexdigest()
+        fileLicence = AttachmentLicence.objects.filter(FileFingerPrint=file_hash).first()
+        if not fileLicence:
+            fileLicence = AttachmentLicence.objects.create(
+                FileFingerPrint = file_hash,
+                RequireSecurity=True
+            )
+            ClassRoomAttachment.objects.create(
+                paymentAmount=paymentAmount,
+                PaymentExpireInterval_MIN=PaymentExpireInterval_MIN,
+                PaymentAccessMaxCount = PaymentAccessMaxCount,
+                Attachments=file,
+                classRoom=currentRoom,
+                attachmentLicence = fileLicence
+            )
+            return GOutput({"success":"attachment uploaded successfully"})
+        #------------------
+        if not fileLicence.owner != self.Requester:
+            self.Requester.Settings.Warnings -= 1 #type:ignore
+            self.Requester.Settings.save() #type:ignore
+            return GOutput({"unauthorized":f"cannot upload this attachment you have {self.Requester.Settings.Warnings}-warning remains"}) #type:ignore
+        classRoom.Attachments.add(fileLicence.classRoomAttachment)
+        return GOutput({"success":f"file uploaded successfully **warning: you already have this file uploaded on the system"})
     #------------------
     def listClassRooms(self,limit:int=100,last_id:int=0)->GeneralOutput:
         classRooms = self.Requester.OwnedClasses.filter(ID__gt=last_id)[:limit].order_by('ID').values('Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
