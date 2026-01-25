@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Any, Optional, Union, cast
 from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
+from core.services.classRoomService import classRoomService
 from core.services.types.submitReason import SubmitReason
-from core.services.types.examTypes import ExamSettings
+from core.services.types.examTypes import ExamSettings, Location_Type
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, toFrontendForm, toFrontendFormHelper
@@ -29,22 +30,6 @@ class GeneralExamServices:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
-    def _RequesterValidation(self,classRoom:classRoom,attribute:UserPrivileges)->GeneralOutput:
-            if self.Requester == classRoom.OwnedBy:
-                return GOutput(issuccess=True)
-            RequesterPrivileges = self.Requester.Privileges.filter(classRoom=classRoom).first()
-            if not RequesterPrivileges:
-                return GOutput(error={"unauthorized":"cannot access this resource"})
-            if RequesterPrivileges.Privilege & attribute != 0:
-                return GOutput(issuccess=True)
-            else:
-                paidClassRoom = self.Requester.Payment_classRoom.filter(classRoom=classRoom).first()
-                if paidClassRoom:
-                    return GOutput(issuccess=True)
-                #------------------
-            #------------------
-            return GOutput(error={"unauthorized":"cannot access this resource"})
-        #------------------
     def _resetDefaultSettings(self,exam:Exam)->dict[str,str]:
         exam.AllowDownLoad = self.INITIAL_SETTINGS["AllowDownload"]
         exam.AutoCorrect = self.INITIAL_SETTINGS["AutoCorrect"]
@@ -282,14 +267,16 @@ class GeneralExamServices:
         if self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.PRIVATE.value:
             return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
         elif self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.CLASSROOM_DEFAULT.value:
-            isInClassRoom = classRoom_Exam.objects.filter(exams=exam,classRoom__in=self.Requester.StudyAt.all()).first()
+            allClassRoomsStudyat = [privilege.ClassRooms for privilege in self.Requester.Privileges.all()] # there could be a better solution but it is what it is for now
+            isInClassRoom = classRoom_Exam.objects.filter(exams=exam,classRoom__in = allClassRoomsStudyat).first()
+            classRoomAuthenticator = classRoomService(self.Requester)
             if not isInClassRoom:
                 return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
             #------------------
-            if self._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
+            if classRoomAuthenticator._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
                 return GOutput(error={"unauthorized":"this exam is private "})
             #------------------
-            if self._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
+            if classRoomAuthenticator._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
                 return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
             #------------------
         #------------------
@@ -328,7 +315,8 @@ class GeneralExamServices:
         return GOutput(i)
     #------------------
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
-        output:GeneralOutput = self._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
+        classRoomAuthenticator = classRoomService(self.Requester)
+        output:GeneralOutput = classRoomAuthenticator._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
         if not output["isSuccess"]:
             return output
         studentSheet.LastUpdate = datetime.now()
@@ -350,7 +338,8 @@ class GeneralExamServices:
     #------------------
     def blackListStudent(self,student:IUserHelper,clsRoom:classRoom,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
-        if self._RequesterValidation(clsRoom,UserPrivileges.REMOVE_STUDNET):
+        classRoomAuthenticator = classRoomService(self.Requester)
+        if classRoomAuthenticator._RequesterValidation(clsRoom,UserPrivileges.REMOVE_STUDNET):
             return GOutput(error={"blacklist":"cannot ban the owner"})
         Exam_BlackList.objects.create(
             student=student,
@@ -412,11 +401,20 @@ class OnlineExam(GeneralExamServices):
             return True
         return False
     #------------------
-    def _checkGPS(self,exam:Exam,location:Location)->bool:
-        # need to check first if the exam even set a location
-        # if setted we need to check-it
-        # else we will return True
-        return True
+    def _checkGPS(self,exam:Exam,location:Location_Type)->bool:
+        examLocation = exam.Locations.filter(Xaxis=location["Xaxis"],Yaxis=location["Yaxis"]).first()
+        if exam.Locations.count()==0:
+            return True
+        #------------------
+        if not examLocation:
+            return False
+        #------------------
+        area = examLocation.buildingArea
+        r = (area**0.5) * ((2**0.5) / 2) # the radius of the circle that surround the square
+        distance = abs(location["Xaxis"] - examLocation.Xaxis) + abs(location["Yaxis"] - examLocation.Yaxis)
+        if distance <= r:
+            return True
+        return False
     #------------------
     def sendCredentials(self, exam: Exam, passKey: str | None = None) -> GeneralOutput[list[QuestionToFront] | None]:
         if not passKey:
@@ -427,7 +425,7 @@ class OnlineExam(GeneralExamServices):
         #------------------
         return super().sendCredentials(exam, passKey)
     #------------------
-    def autoSave(self,exam:Exam,passKey:str,q:Question,student:IUserHelper,ans:str,location:Location)->GeneralOutput:
+    def autoSave(self,exam:Exam,passKey:str,q:Question,student:IUserHelper,ans:str,location:Location_Type)->GeneralOutput:
         if not self._checkPassKey(exam,passKey):
             return GOutput(error={"passKey":"is not correct"})
         #------------------

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "core",
     "corsheaders",
     "socket_encoder",
+    "rest_framework"
 ]
 
 

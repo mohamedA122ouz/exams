@@ -5,14 +5,16 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
 import pdfkit
-from core.models.Exams_models import Exam
+from core.models.Exams_models import Exam, Privileges
 from core.services import examService
+from core.services.classRoomService import classRoomService
 from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
 from core.services.types.examTypes import ExamSettings, examRequest
 from core.services.types.userType import IUserHelper
+from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
@@ -143,21 +145,6 @@ def showExam(request:HttpRequest):
     frontEndData = examService.sendCredentials(exam)
     return ResponseHelper(frontEndData)
 #------------------
-# @require_GET
-# @csrf_exempt
-# def download(request:HttpRequest):
-#     user = cast(IUserHelper,request.user)
-#     exam_GEN = GeneralExamServices(user)
-#     output = exam_GEN.print()
-#     config = pdfkit.configuration(wkhtmltopdf=r"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
-#     pdf = pdfkit.from_string(output["output"],False,configuration=config)
-    
-#     res = HttpResponse(pdf,content_type="application/pdf")
-#     res["Content-Disposition"] = "inline;filename=test.pdf"
-#     # return res
-#     return render(request,"printingTemplates/examEN.html",{
-#             "test":"this is a test"
-#         })
 @require_GET
 @csrf_exempt
 def download(request:HttpRequest):
@@ -192,3 +179,21 @@ def download(request:HttpRequest):
         "startAt":exam.StartAt,
     })
     return i
+#------------------
+@require_POST
+@csrf_exempt
+def createClassRoom(request:HttpRequest):
+    body = cast(ClassRoomFromFrontend,json.loads(request.body))
+    user = cast(IUserHelper,request.user)
+    clService = classRoomService(user)
+    # automatically connect the teacher or the class room owner to the class room live session
+    return ResponseHelper(clService.createClassRoom(body))
+#------------------
+@require_GET
+@csrf_exempt
+def listclassRooms(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    clService = classRoomService(user)
+    return ResponseHelper(clService.listClassRooms())
+#------------------
+
