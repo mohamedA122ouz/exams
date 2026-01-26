@@ -14,5 +14,7 @@ class MessageSerializer:
 
     # serialzer massege to json 
     @staticmethod
-    def serialize(message: str) -> str:
+    def serialize(message: str | dict) -> str:
+        if isinstance(message, dict):
+            return json.dumps(message)
         return json.dumps({"message": message})

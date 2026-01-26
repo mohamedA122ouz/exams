@@ -26,6 +26,7 @@ class HubConsumer(AsyncWebsocketConsumer):
         # activate the socket handler
         self.handler = HubHandler(self.group_service)
 
+        user = self.scope["user"]
         if not await self.handler.handle_user_auth(self.scope):
             await self.send(
                 text_data=MessageSerializer.serialize("You are not authenticated")
@@ -46,13 +47,14 @@ class HubConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         payload = MessageSerializer.deserialize(text_data)
-        await self.handler.handle_message(payload)
+        await self.handler.handle_message(payload,self.scope["user"])
 
     async def hub_message(self, event):
         await self.send(
             text_data=MessageSerializer.serialize({
                 "message": event["message"],
                 "sender": event.get("sender"),
+                "sender_id": event.get("sender_id")
             })
         )
 
