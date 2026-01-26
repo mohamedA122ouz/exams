@@ -17,10 +17,8 @@ class classRoomService:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
-    def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges)->GeneralOutput[Optional[classRoom]]:
-
+    def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges,countAccessCounterDown:bool=False)->GeneralOutput[Optional[classRoom]]:
         wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
-
         if not wantedClassRoom:
             return GOutput(error={"404":"classRoom not found"})
         if wantedClassRoom.OwnedBy == self.Requester:
@@ -35,20 +33,25 @@ class classRoomService:
         if payment.ExpireDateTime <= datetime.now() and not payment.AccessCounter:
             return GOutput(wantedClassRoom)
         if not payment.ExpireDateTime and payment.AccessCounter > 0:
-            payment.AccessCounter -= 1
-            payment.save()
+            if countAccessCounterDown:
+                payment.AccessCounter -= 1
+                payment.save()
             return GOutput(wantedClassRoom)
+        #------------------
         if payment.ExpireDateTime <= datetime.now() and payment.AccessCounter > 0:
+            if countAccessCounterDown:
+                payment.AccessCounter -= 1
+                payment.save()
             return GOutput(wantedClassRoom)
-        
-        condition1 = Q(ExpressionWrapper(F('Privilege') & privilege.value,output_field=IntegerField())__gt=0)#type:ignore
-        userprivilege = self.Requester.Privileges.filter(condition1,ClassRoom=class_room).first() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(condition1,ClassRoom__ID=class_room).first()
-        if userprivilege:
+        #------------------
+        userprivilege = self.Requester.Privileges.filter(ClassRoom=class_room).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRoom__ID=class_room).all()
+        userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
+        if len(userprivilege) > 0:
             return GOutput(wantedClassRoom)
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
     def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput:
-        return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING)
+        return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING,True)
     #------------------
     def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
