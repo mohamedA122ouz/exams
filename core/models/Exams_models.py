@@ -147,6 +147,7 @@ class ClassRoomAttachment(models.Model):
         Payment_Attachment:Manager["Payment_Attachment"]
 #------------------
 class Payment_classRoom(models.Model):
+    TransactionTime = models.DateTimeField(auto_now=True)
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
     AccessCounter = models.BigIntegerField(null=True,blank=True)
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
@@ -160,6 +161,7 @@ class Payment_Attachment(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
     classRoomAttachment = models.ForeignKey("ClassRoomAttachment",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
+    TransactionTime = models.DateTimeField(auto_now=True)
 #------------------
 class classRoom_Exam(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -187,7 +189,7 @@ class Privileges(models.Model):
     # Privileges
     Name = models.CharField(null=False,max_length=50)
     # RELATIONS
-    ClassRooms = models.ForeignKey("ClassRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
+    ClassRooms:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
     User = models.ManyToManyField(User,related_name="Privileges",default=1)
     Privilege = models.IntegerField(null=False,blank=False,default=0)
 #------------------
@@ -205,6 +207,7 @@ class chatRoom(models.Model):
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
 #------------------
 class Payment_ChatRoom(models.Model):
+    TransactionTime = models.DateTimeField(auto_now=True)
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
     AccessCounter = models.BigIntegerField(null=True,blank=True)
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)

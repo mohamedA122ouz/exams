@@ -1,5 +1,6 @@
-from typing import cast
-from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Exam, Privileges, chatRoom, classRoom
+from datetime import datetime
+from typing import Optional, cast
+from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Exam, Payment_classRoom, Privileges, chatRoom, classRoom
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
@@ -10,28 +11,44 @@ import hashlib
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
+from django.db.models import F,ExpressionWrapper,IntegerField,Q
 
 class classRoomService:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
-    def _RequesterValidation(self,classRoom:classRoom,attribute:UserPrivileges)->GeneralOutput:
-        if not classRoom:
-            return GOutput(issuccess=False)
-        if self.Requester == classRoom.OwnedBy:
-            return GOutput(issuccess=True)
-        RequesterPrivileges = self.Requester.Privileges.filter(classRoom=classRoom).first()
-        if not RequesterPrivileges:
+    def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges)->GeneralOutput[Optional[classRoom]]:
+
+        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
+
+        if not wantedClassRoom:
+            return GOutput(error={"404":"classRoom not found"})
+        if wantedClassRoom.OwnedBy == self.Requester:
+            return GOutput(wantedClassRoom)
+        if wantedClassRoom.paymentAmount == 0:
+            return GOutput(wantedClassRoom)
+        payment = Payment_classRoom.objects.filter(Owner=self.Requester,classRoom=wantedClassRoom).order_by('TransactionTime').first()
+        if not payment:
             return GOutput(error={"unauthorized":"cannot access this resource"})
-        if RequesterPrivileges.Privilege & attribute != 0:
-            return GOutput(issuccess=True)
-        else:
-            paidClassRoom = self.Requester.Payment_classRoom.filter(classRoom=classRoom).first()
-            if paidClassRoom:
-                return GOutput(issuccess=True)
-            #------------------
-        #------------------
+        if not payment.ExpireDateTime and not payment.AccessCounter:
+            return GOutput(wantedClassRoom)
+        if payment.ExpireDateTime <= datetime.now() and not payment.AccessCounter:
+            return GOutput(wantedClassRoom)
+        if not payment.ExpireDateTime and payment.AccessCounter > 0:
+            payment.AccessCounter -= 1
+            payment.save()
+            return GOutput(wantedClassRoom)
+        if payment.ExpireDateTime <= datetime.now() and payment.AccessCounter > 0:
+            return GOutput(wantedClassRoom)
+        
+        condition1 = Q(ExpressionWrapper(F('Privilege') & privilege.value,output_field=IntegerField())__gt=0)#type:ignore
+        userprivilege = self.Requester.Privileges.filter(condition1,ClassRoom=class_room).first() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(condition1,ClassRoom__ID=class_room).first()
+        if userprivilege:
+            return GOutput(wantedClassRoom)
         return GOutput(error={"unauthorized":"cannot access this resource"})
+    #------------------
+    def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput:
+        return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING)
     #------------------
     def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
@@ -183,4 +200,5 @@ class classRoomService:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
         return GOutput(list(currentClassRoom.Privileges.objects.values('Name','id')))
     #------------------
+
 #------------------CLASS_ENDED#------------------
