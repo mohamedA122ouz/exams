@@ -2,6 +2,7 @@ from channels.auth import UserLazyObject
 from django.contrib.auth.models import User
 from core.models.Exams_models import messages,classRoom
 from socket_encoder.socoket_utils.group_service import GroupService
+from channels.db import database_sync_to_async
 class HubHandler:
     def __init__(self, group_service: GroupService):
         self.group_service = group_service
@@ -26,15 +27,24 @@ class HubHandler:
         # save the message into db or redis
         group_name = self.group_service.group_name
         class_room=await self.get_class_room_instance(group_name)
-        print(class_room)
         if not class_room:
             return
-        messages.objects.create(Owner=sender,text=message,classRoom=class_room)
+        
+        @database_sync_to_async
+        def _save():
+            messages.objects.create(Owner=sender,text=message,classRoom=class_room)
+        
+        await _save()
+        
     async def get_class_room_instance(self,class_room_id:str)->classRoom|None:
-        class_room=classRoom.objects.get(id=class_room_id)
-        if class_room:
-            return class_room
-        return None
+        @database_sync_to_async
+        def _get():
+            try:
+                return classRoom.objects.get(ID=int(class_room_id.split("_")[1]))
+            except classRoom.DoesNotExist:
+                return None
+        
+        return await _get()
     async def handle_message(self, payload: dict|None,sender:UserLazyObject|None)->None:
         if not payload:
             return
