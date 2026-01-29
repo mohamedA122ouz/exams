@@ -16,6 +16,7 @@ class ProfileSettings(models.Model):
     ID = models.AutoField(primary_key=True)
     PreferedLang = models.ForeignKey("supportedLanguages",on_delete=models.CASCADE,null=False,related_name="Profiles")
     User = models.OneToOneField(User,on_delete=models.CASCADE,related_name="Settings")
+    socketID = models.TextField(null=True,default=None)
 #------------------
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
