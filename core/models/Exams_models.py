@@ -145,9 +145,18 @@ class ClassRoomAttachment(models.Model):
     Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
     classRoom = models.ManyToManyField(classRoom,related_name="Attachments",through='classRoom_ClassRoomAttachment')
     attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
+    otherAttachmets = models.ManyToManyField("ClassRoomAttachment",related_name="relatedAttachment")
     if TYPE_CHECKING:
         Payment_Attachment:Manager["Payment_Attachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
+        relatedAttachment:ManyRelatedManager["ClassRoomAttachment"]
+        dependencies:Manager["AttachmentDependencies"]
+    #------------------
+#------------------
+class AttachmentDependencies(models.Model):
+    ID = models.AutoField(primary_key=True)
+    jsonDep = models.JSONField()
+    attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE,related_name='dependencies')
 #------------------
 class classRoom_ClassRoomAttachment(models.Model):
     classRoom = models.ForeignKey("classRoom",models.CASCADE,"cl_clAttach")
@@ -252,7 +261,7 @@ class dependenciesRepo:
     # how this works this is like a small logic 
     dependentTable = models.TextField() # main table like Attachment
     dependOnTable = models.TextField() # main table depend on this table like exams
-    value = models.TextField() # value
+    field_value = models.JSONField() # {Exam__ID:<VALUE>}
 #------------------
 
 #-----------------------------------------------
@@ -277,5 +286,3 @@ class balance(models.Model):
     Owner = models.OneToOneField(User,on_delete=models.PROTECT,null=False,related_name="Balance")
     Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
 #------------------
-
-
