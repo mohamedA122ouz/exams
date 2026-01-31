@@ -133,6 +133,7 @@ class classRoom(models.Model):
         Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
         Attachments: ManyRelatedManager["ClassRoomAttachment"]
+        cl_clAttach:Manager['classRoom_ClassRoomAttachment']
 #------------------
 class ClassRoomAttachment(models.Model):
     #PAYMENT SETTINGS
@@ -142,10 +143,17 @@ class ClassRoomAttachment(models.Model):
     # ATTACHMENT FIELDS
     ID = models.AutoField(primary_key=True)
     Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
-    classRoom = models.ManyToManyField(classRoom,related_name="Attachments")
+    classRoom = models.ManyToManyField(classRoom,related_name="Attachments",through='classRoom_ClassRoomAttachment')
     attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
     if TYPE_CHECKING:
         Payment_Attachment:Manager["Payment_Attachment"]
+        cl_clAttach:Manager['classRoom_ClassRoomAttachment']
+#------------------
+class classRoom_ClassRoomAttachment(models.Model):
+    classRoom = models.ForeignKey("classRoom",models.CASCADE,"cl_clAttach")
+    order = models.IntegerField()
+    isOrderDepenent = models.BooleanField(default=False)
+    ClassRoomAttachment = models.ForeignKey("ClassRoomAttachment",models.CASCADE,"cl_clAttach")
 #------------------
 class Payment_classRoom(models.Model):
     TransactionTime = models.DateTimeField(auto_now=True)
@@ -238,7 +246,14 @@ class AttachmentLicence(models.Model):
     if TYPE_CHECKING:
         classRoomAttachment:ClassRoomAttachment
 #------------------
-
+class dependenciesRepo: 
+    # This table must not connect with other tables
+    # This table is just a placeholder for the dependencies
+    # how this works this is like a small logic 
+    dependentTable = models.TextField() # main table like Attachment
+    dependOnTable = models.TextField() # main table depend on this table like exams
+    value = models.TextField() # value
+#------------------
 
 #-----------------------------------------------
 #-----------------------------------------------
