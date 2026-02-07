@@ -203,5 +203,4 @@ class classRoomService:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
         return GOutput(list(currentClassRoom.Privileges.objects.values('Name','id')))
     #------------------
-
 #------------------CLASS_ENDED#------------------

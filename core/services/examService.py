@@ -4,7 +4,7 @@ from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Locat
 from core.services.classRoomService import classRoomService
 from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings, Location_Type
-from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, ShareWithEnum, GeneralOutput
+from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, QuestionType, ScoringMode, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, toFrontendForm, toFrontendFormHelper
 from django.db.models import F,QuerySet
@@ -314,6 +314,52 @@ class GeneralExamServices:
         })
         return GOutput(i)
     #------------------
+    def autoMarking(self,classRoom,studentSheet:solutionsSheet):
+        classRoomAuthenticator = classRoomService(self.Requester)
+        output:GeneralOutput = classRoomAuthenticator._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
+        if not output["isSuccess"]:
+            return output
+        studentSheet.LastUpdate = datetime.now()
+        SOLNS = studentSheet.Solns.all()
+        WAITIN_AI_SOLN:list[Soln] = []
+        for soln in SOLNS:
+            soln.correctedBy = None
+            ExamQuestion = Exam_Questions.objects.filter(Exam=solutionsSheet.Exam ,Question=soln.Question).first()
+            if not ExamQuestion:
+                return GOutput(error={"exam":"exam doesn't include this question"})
+            #------------------
+            FULL_MARK = ExamQuestion.degree
+            if soln.Question.Type == QuestionType.COMPLEX or soln.Question.Type == QuestionType.WRITTEN_QUETION:
+                WAITIN_AI_SOLN.append(soln)
+            #------------------
+            MODLE_ANS:list[str] = sorted(cast(str,soln.Question.Ans).split(','))
+            STUDENT_ANS:list[str] = sorted(cast(str,soln.Content).split(','))
+            correctAnsCount = 0
+            for i,ans in enumerate(MODLE_ANS):
+                if ans == STUDENT_ANS[i]:
+                    correctAnsCount += 1
+                #------------------
+            #------------------
+            PERCENTAGE =  correctAnsCount/len(MODLE_ANS)
+            if soln.Question.scoringMode == ScoringMode.MULTI_ANS_ONE_ENOUGH:
+                soln.Degree = FULL_MARK
+                studentSheet.TotalMark += FULL_MARK
+            #------------------
+            elif soln.Question.scoringMode == ScoringMode.MULTI_ANS_PARTITION:
+                soln.Degree = round(PERCENTAGE * FULL_MARK,3)
+                studentSheet.TotalMark += round(PERCENTAGE * FULL_MARK,3)
+            #------------------
+            else:
+                soln.Degree = 0
+            #------------------
+        #------------------
+        Soln.objects.bulk_update(SOLNS,'Degree')
+        self.useAI(WAITIN_AI_SOLN)
+        studentSheet.save()
+    #------------------
+    def useAI(self,soln:list[Soln]):
+        ...
+    #------------------
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
         classRoomAuthenticator = classRoomService(self.Requester)
         output:GeneralOutput = classRoomAuthenticator._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
@@ -327,7 +373,7 @@ class GeneralExamServices:
         #------------------
         if degree <= ExamQuestion.degree and degree > 0:
             soln.Degree = degree
-        elif degree<0:
+        elif degree < 0:
             soln.Degree = 0
         else:
             soln.Degree = ExamQuestion.degree

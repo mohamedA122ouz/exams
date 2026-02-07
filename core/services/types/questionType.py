@@ -3,6 +3,15 @@ from enum import IntEnum
 
 from core.services.types.attachmentType import Attachments
 
+
+class ScoringMode(IntEnum):
+    DEFAULT = 0
+    MULTI_ANS_ONE_ENOUGH = 1
+    MULTI_ANS_PARTITION = 2
+    @classmethod
+    def choices(cls):
+        return [(k.value,k.name) for k in cls]
+#------------------
 class QuestionType(IntEnum):
     MCQ_ONE_ANS = 0
     MCQ_MORE_ANS = 1

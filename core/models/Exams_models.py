@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from django.db import models
 from django.contrib.auth.models import User
 from core.services.types.submitReason import SubmitReason
-from core.services.types.questionType import QuestionEase, QuestionType, ShareWithEnum
+from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode, ShareWithEnum
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
 if TYPE_CHECKING:
@@ -58,6 +58,7 @@ class Question(models.Model):
     InExamCounter = models.IntegerField(default=0,null=False)
     Ease = models.IntegerField(choices=QuestionEase.choices(),default=QuestionEase.EASY)
     OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Questions",null=True,default=None)
+    scoringMode = models.IntegerField(choices=ScoringMode.choices(),default=ScoringMode.DEFAULT.value)
     if TYPE_CHECKING:
         Exams:ManyRelatedManager["Exam"] # only owner should see this else shouldn't see
         Solns:Manager["Soln"]
@@ -259,9 +260,9 @@ class dependenciesRepo:
     # This table must not connect with other tables
     # This table is just a placeholder for the dependencies
     # how this works this is like a small logic 
-    dependentTable = models.TextField() # main table like Attachment
+    dependentTable = models.TextField() # main table like Attachment 
     dependOnTable = models.TextField() # main table depend on this table like exams
-    field_value = models.JSONField() # {Exam__ID:<VALUE>}
+    field_value = models.JSONField() # {ID:<VALUE-ID>,value:} 
 #------------------
 
 #-----------------------------------------------
