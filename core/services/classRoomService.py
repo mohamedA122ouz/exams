@@ -1,8 +1,12 @@
 from datetime import datetime
+from math import ceil
 from typing import Optional, cast
-from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Exam, Payment_classRoom, Privileges, chatRoom, classRoom
+
+from django.forms import model_to_dict
+from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Committe, CommitteAllowedList, Exam, Payment_classRoom, Privileges, WatchHistory, chatRoom, classRoom, dependenciesRepo
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
+from core.services.utils import priviliages
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.priviliages import UserPrivileges
@@ -18,6 +22,7 @@ class classRoomService:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
     def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges,countAccessCounterDown:bool=False)->GeneralOutput[Optional[classRoom]]:
+        """For Resources that is allowed to be accessed if user paid"""
         wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
         if not wantedClassRoom:
             return GOutput(error={"404":"classRoom not found"})
@@ -44,14 +49,22 @@ class classRoomService:
                 payment.save()
             return GOutput(wantedClassRoom)
         #------------------
-        userprivilege = self.Requester.Privileges.filter(ClassRoom=class_room).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRoom__ID=class_room).all()
-        userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
-        if len(userprivilege) > 0:
-            return GOutput(wantedClassRoom)
+        checkingResult = self._checkForPrivilege(wantedClassRoom,privilege)
+        if checkingResult["isSuccess"]:
+            return GOutput(checkingResult["output"])
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
     def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput:
         return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING,True)
+    #------------------
+    def _checkForPrivilege(self,class_room:int|classRoom,privilege:UserPrivileges):
+        """for checking for resources only witout the payment stuff"""
+        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
+        userprivilege = self.Requester.Privileges.filter(ClassRoom=wantedClassRoom).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRoom__ID=class_room).all()
+        userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
+        if len(userprivilege) > 0:
+            return GOutput(wantedClassRoom)
+        return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
     def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
@@ -126,7 +139,7 @@ class classRoomService:
             return GOutput(error={"roleTitle":"cannot be null"})
         if not privileges:
             return GOutput(error={"privileges":"cannot be null"})
-        currentRoom.Privileges.objects.create(
+        currentRoom.Privileges.create(
             Name=roleTitle,
             Privilege=privileges
         )
@@ -136,10 +149,10 @@ class classRoomService:
         if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add User"})
         #------------------
-        if not currentRoom.Privileges.objects.contains(role):
+        if not currentRoom.Privileges.contains(role):
             return GOutput(error={"privileges":"cannot add user with a not exist privileges"})
         #------------------
-        role.User.add(cast(User,user))
+        role.Users.add(cast(User,user))
         return GOutput({"success":"user created with specified role successfully"})
     #------------------
     def addExam(self,currentRoom:classRoom,Exam:Exam):
@@ -189,18 +202,129 @@ class classRoomService:
         return GOutput(list(classRooms))
     #------------------
     def listUsersWithPrivileges(self,currentClassRoom:classRoom,privilege:UserPrivileges,limit:int=100,last_id:int=0):
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS):
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
-        currentPriv = currentClassRoom.Privileges.objects.filter(Privilege=privilege).first()
+        currentPriv = currentClassRoom.Privileges.filter(Privilege=privilege).first()
         if not currentPriv:
             return GOutput(error={"privilege":"not exist privilege"})
         #------------------
-        users = currentPriv.User.filter(ID__gt=last_id).order_by('ID')[:limit].values('ID', 'username', 'email')
+        users = currentPriv.Users.filter(ID__gt=last_id).order_by('ID')[:limit].values('ID', 'username', 'email')
         return GOutput(list(users))
     #------------------
     def listPrivileges(self,currentClassRoom:classRoom)->GeneralOutput:
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS):
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
-        return GOutput(list(currentClassRoom.Privileges.objects.values('Name','id')))
+        return GOutput(list(currentClassRoom.Privileges.values('Name','id')))
+    #------------------
+    def listAttachments(self,currentClassRoom:classRoom):
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+        return GOutput(list(currentClassRoom.Attachments.values('name','ID')))
+    #------------------
+    def showAttahcment(self,currentClassRoom:classRoom,AttahcmentID:int):
+        if not self._RequesterValidation(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+        cl_att = classRoom.Attachments.filter(ID=AttahcmentID).first()
+        isVerified = False
+        if not cl_att:
+            return GOutput(error={"404":"cannot access this attachment"})
+        if not cl_att.isOrdered or cl_att.order == 1:
+            isVerified = True
+        #------------------
+        history = self.Requester.attachmentHistory.filter(attachment__order__lte=cl_att.order,attachment__classRoom=currentClassRoom)
+        if history.exists() :
+            isVerified = True
+        #------------------
+        if cl_att.dependencies.exists():
+            isVerified = False
+            if self._checkDependencies(cl_att):
+                isVerified = True
+            #------------------
+        #------------------
+        if isVerified:
+            self.Requester.attachmentHistory.create(attachment=cl_att)
+            return GOutput({
+                "name":cl_att.name,
+                "ID":cl_att.ID,
+                "Attachments":[{'name':att.name,'ID':att.ID,'Attachments_Count':len(att.Attachments)}for att in cl_att.Attachments]
+            })
+        #------------------
+        return GOutput(error={"400":"bad request cannot access this resource without order"})
+    #------------------
+    def _checkDependencies(self,attachment:ClassRoomAttachment):
+        deps = attachment.dependencies.all()
+        repoItems = dependenciesRepo.objects.filter(field_value__in=deps)
+        if len(deps) != len(repoItems):
+            return False
+        #------------------
+        for dep in deps:
+            ...
+    #------------------
+    def AutocreateCommitee(self,currentClassRoom:classRoom,Exam:Exam):
+        if not self._checkForPrivilege(currentClassRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+        #------------------
+        privileges = currentClassRoom.Privileges.all()
+        adminPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.CREATE_EXAM.value]
+        studentsPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.SOLVE_EXAM_ALLOWANCE.value]
+        admins = []
+        for user in adminPrivileges:
+            admins += list(user.Users.all())
+        #------------------
+        students = []
+        for user in studentsPrivileges:
+            students += list(user.Users.all())
+        #------------------
+        adminsCount = len(admins)
+        studentsCount = len(students)
+        CommitteStudentsCount = ceil(studentsCount/adminsCount)
+        committes:list[Committe] = []
+        for admin in admins:
+            committes.append(Committe(
+                clRoom = currentClassRoom,
+                Exam = Exam,
+                isOpened = False,
+                inspector = admin
+            ))
+        #------------------
+        Committe.objects.bulk_create(committes)
+        allCommittesLists = []
+        for i,committe in enumerate(committes):
+            start = i * CommitteStudentsCount
+            end = start + CommitteStudentsCount - 1
+            allCommittesLists += [CommitteAllowedList(users=st,committe=committe,present=False) for st in students[start:end]]
+        #------------------
+        CommitteAllowedList.objects.bulk_create(allCommittesLists)
+    #------------------
+    def ManualcreateCommitee(self,currentClassRoom:classRoom,Exam:Exam,admins:list[IUserHelper]):
+        if not self._checkForPrivilege(currentClassRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+        #------------------
+        privileges = currentClassRoom.Privileges.all()
+        studentsPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.SOLVE_EXAM_ALLOWANCE.value]
+        students = []
+        for user in studentsPrivileges:
+            students += list(user.Users.all())
+        #------------------
+        adminsCount = len(admins)
+        studentsCount = len(students)
+        CommitteStudentsCount = ceil(studentsCount/adminsCount)
+        committes:list[Committe] = []
+        for admin in admins:
+            committes.append(Committe(
+                clRoom = currentClassRoom,
+                Exam = Exam,
+                isOpened = False,
+                inspector = admin
+            ))
+        #------------------
+        Committe.objects.bulk_create(committes)
+        allCommittesLists = []
+        for i,committe in enumerate(committes):
+            start = i * CommitteStudentsCount
+            end = start + CommitteStudentsCount - 1
+            allCommittesLists += [CommitteAllowedList(users=st,committe=committe,present=False) for st in students[start:end]]
+        #------------------
+        CommitteAllowedList.objects.bulk_create(allCommittesLists)
     #------------------
 #------------------CLASS_ENDED#------------------

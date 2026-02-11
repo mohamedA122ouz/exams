@@ -130,11 +130,12 @@ class classRoom(models.Model):
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
     if TYPE_CHECKING:
-        Privileges: models.ForeignKey["Privileges"]
+        Privileges: Manager["Privileges"]
         Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
         Attachments: ManyRelatedManager["ClassRoomAttachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
+        Committes:Manager['Committe']
 #------------------
 class ClassRoomAttachment(models.Model):
     #PAYMENT SETTINGS
@@ -143,6 +144,9 @@ class ClassRoomAttachment(models.Model):
     PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
     # ATTACHMENT FIELDS
     ID = models.AutoField(primary_key=True)
+    name = models.TextField(null=False,blank=False,default='NO_NAME')
+    order = models.IntegerField(default=0,null=False)
+    isOrdered = models.BooleanField(null=False)
     Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
     classRoom = models.ManyToManyField(classRoom,related_name="Attachments",through='classRoom_ClassRoomAttachment')
     attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
@@ -209,7 +213,7 @@ class Privileges(models.Model):
     Name = models.CharField(null=False,max_length=50)
     # RELATIONS
     ClassRooms:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
-    User = models.ManyToManyField(User,related_name="Privileges",default=1)
+    Users = models.ManyToManyField(User,related_name="Privileges",default=1)
     Privilege = models.IntegerField(null=False,blank=False,default=0)
 #------------------
 class chatRoom(models.Model):
@@ -256,13 +260,35 @@ class AttachmentLicence(models.Model):
     if TYPE_CHECKING:
         classRoomAttachment:ClassRoomAttachment
 #------------------
-class dependenciesRepo: 
+class dependenciesRepo(models.Model): 
     # This table must not connect with other tables
     # This table is just a placeholder for the dependencies
     # how this works this is like a small logic 
     dependentTable = models.TextField() # main table like Attachment 
     dependOnTable = models.TextField() # main table depend on this table like exams
     field_value = models.JSONField() # {ID:<VALUE-ID>,value:} 
+#------------------
+class Committe(models.Model):
+    clRoom = models.ForeignKey(classRoom,models.CASCADE)
+    Exam = models.ForeignKey('Exam',on_delete=models.CASCADE,null=False)
+    isOpened = models.BooleanField(null=False,default=False)
+    inspector = models.ForeignKey(User,models.CASCADE,null=False,related_name='inspector')
+    if TYPE_CHECKING:
+        allowList:Manager['CommitteAllowedList']
+        Events:Manager['CommitteEvents']
+#------------------
+class CommitteAllowedList(models.Model):
+    users = models.ForeignKey(User,on_delete=models.CASCADE,related_name='allowedIn')
+    committe = models.ForeignKey(Committe,on_delete=models.CASCADE)
+    present = models.BooleanField(null=False,default=False)
+    
+#------------------
+class CommitteEvents(models.Model):
+    eventStr = models.TextField()
+    committe = models.ForeignKey(Committe,models.CASCADE,related_name='Events')
+class WatchHistory(models.Model):
+    user = models.ForeignKey(User,models.CASCADE,related_name='attachmentHistory')
+    attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE)
 #------------------
 
 #-----------------------------------------------
