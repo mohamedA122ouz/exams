@@ -32,4 +32,7 @@ ALLOWED_MIME_TYPES = {
             # 📊 Excel
             "application/vnd.ms-excel",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            
+            # 📄 PDF
+            "application/pdf"
         }

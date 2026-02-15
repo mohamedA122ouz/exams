@@ -23,7 +23,10 @@ urlpatterns = [
     path('exam/show',API_v0.showExam,name="showExam"),
     path('exams/download',API_v0.download,name="download"),
     path('classes',API_v0.listclassRooms,name="listclassRooms"),
-    path('classes/create',API_v0.createClassRoom,name="createClassRoom")
+    path('classes/create',API_v0.createClassRoom,name="createClassRoom"),
+    path('classes/get/attachments',API_v0.listAttachment,name="listAttachment"),
+    path('classes/upload/attachments',API_v0.uploadAttachment,name="uploadAttachment"),
+    path('classes/assign/exam',API_v0.assignExamToClassRoom,name="assignExamToClassRoom")
     
     
 ]

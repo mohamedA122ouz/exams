@@ -26,7 +26,7 @@ class LoginRequiredMiddleware:
             if not request.user.is_authenticated and request.path not in self.exclude_paths:
                 if request.path.startswith("/api"):
                     return JsonResponse({"login":"is required"},status=403) 
-                return redirect('userloginPage')
+                return redirect('API_v0_login')
             # Otherwise, continue normally
             response = self.get_response(request)
             return response

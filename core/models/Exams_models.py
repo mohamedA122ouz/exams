@@ -126,9 +126,10 @@ class classRoom(models.Model):
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
     Title = models.CharField(max_length=50,null=True,default="")
-    OwnedBy = models.OneToOneField(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
+    OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
+    attachmentsCounter = models.IntegerField(default=0,null=False)
     if TYPE_CHECKING:
         Privileges: Manager["Privileges"]
         Payment_classRoom:Manager["Payment_classRoom"]
@@ -146,11 +147,12 @@ class ClassRoomAttachment(models.Model):
     ID = models.AutoField(primary_key=True)
     name = models.TextField(null=False,blank=False,default='NO_NAME')
     order = models.IntegerField(default=0,null=False)
-    isOrdered = models.BooleanField(null=False)
+    isOrdered = models.BooleanField(null=False,default=False)
     Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
     classRoom = models.ManyToManyField(classRoom,related_name="Attachments",through='classRoom_ClassRoomAttachment')
     attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
     otherAttachmets = models.ManyToManyField("ClassRoomAttachment",related_name="relatedAttachment")
+    thumbnail = models.FileField(upload_to="thumbnails/",null=True,default=None)
     if TYPE_CHECKING:
         Payment_Attachment:Manager["Payment_Attachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
@@ -253,7 +255,7 @@ class paymentLocker(models.Model):
 #------------------
 class AttachmentLicence(models.Model):
     ID  = models.AutoField(primary_key=True)
-    owner = models.OneToOneField(User,on_delete=models.CASCADE,related_name='attachmentLicence')
+    owner = models.ForeignKey(User,on_delete=models.CASCADE,related_name='attachmentLicence')
     uploadTime = models.DateTimeField(auto_now=True)
     FileFingerPrint = models.TextField()
     RequireSecurity = models.BooleanField(default=False)
@@ -266,7 +268,7 @@ class dependenciesRepo(models.Model):
     # how this works this is like a small logic 
     dependentTable = models.TextField() # main table like Attachment 
     dependOnTable = models.TextField() # main table depend on this table like exams
-    field_value = models.JSONField() # {ID:<VALUE-ID>,value:} 
+    allowedFields = models.JSONField() # ['ID','Field1',...] 
 #------------------
 class Committe(models.Model):
     clRoom = models.ForeignKey(classRoom,models.CASCADE)

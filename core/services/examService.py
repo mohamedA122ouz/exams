@@ -30,6 +30,18 @@ class GeneralExamServices:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
     #------------------
+    def validateOwnerShip(self,exam:Exam|int)->GeneralOutput[Optional[Exam]]:
+        if isinstance(exam,int):
+            exam_ = Exam.objects.filter(ID=exam).first()
+            if not exam_:
+                return GOutput(error={"exam":"is not found"})
+            #------------------
+            exam = exam_
+        #------------------
+        if exam.Owner == self.Requester:
+            return GOutput(exam)
+        return GOutput(error={"unauthorized":"cannot access this resource"})
+    #------------------
     def _resetDefaultSettings(self,exam:Exam)->dict[str,str]:
         exam.AllowDownLoad = self.INITIAL_SETTINGS["AllowDownload"]
         exam.AutoCorrect = self.INITIAL_SETTINGS["AutoCorrect"]

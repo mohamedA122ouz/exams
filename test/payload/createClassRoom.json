@@ -1,0 +1,7 @@
+{
+    "title": "test paid class rooms",
+    "HideFromSearch": false,
+    "paymentAmount": 500,
+    "PaymentExpireInterval_MIN": 0,
+    "PaymentAccessMaxCount": 3
+}

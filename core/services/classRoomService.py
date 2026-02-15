@@ -3,7 +3,7 @@ from math import ceil
 from typing import Optional, cast
 
 from django.forms import model_to_dict
-from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Committe, CommitteAllowedList, Exam, Payment_classRoom, Privileges, WatchHistory, chatRoom, classRoom, dependenciesRepo
+from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Committe, CommitteAllowedList, Exam, Payment_classRoom, Privileges, WatchHistory, chatRoom, classRoom, classRoom_ClassRoomAttachment, dependenciesRepo
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils import priviliages
@@ -16,19 +16,26 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
 from django.db.models import F,ExpressionWrapper,IntegerField,Q
-
+from django.db import transaction
 class classRoomService:
     def __init__(self,user) -> None:
         self.Requester:IUserHelper = cast(IUserHelper,user)
+        self.UNAUTHORIZED_OBJECT = {"unauthorized":"cannot access this resource"}
+        self.NOT_FOUND = {"classRoom":"is not found"}
     #------------------
     def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges,countAccessCounterDown:bool=False)->GeneralOutput[Optional[classRoom]]:
         """For Resources that is allowed to be accessed if user paid"""
-        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
+        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(ID=class_room).first()
         if not wantedClassRoom:
             return GOutput(error={"404":"classRoom not found"})
         if wantedClassRoom.OwnedBy == self.Requester:
             return GOutput(wantedClassRoom)
+        checkingResult = self._checkForPrivilege(class_room,privilege)
+        if not checkingResult["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot access this resource"})
         if wantedClassRoom.paymentAmount == 0:
+            return GOutput(wantedClassRoom)
+        if privilege == UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING:
             return GOutput(wantedClassRoom)
         payment = Payment_classRoom.objects.filter(Owner=self.Requester,classRoom=wantedClassRoom).order_by('TransactionTime').first()
         if not payment:
@@ -49,12 +56,9 @@ class classRoomService:
                 payment.save()
             return GOutput(wantedClassRoom)
         #------------------
-        checkingResult = self._checkForPrivilege(wantedClassRoom,privilege)
-        if checkingResult["isSuccess"]:
-            return GOutput(checkingResult["output"])
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #------------------
-    def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput:
+    def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput[Optional[classRoom]]:
         return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING,True)
     #------------------
     def _checkForPrivilege(self,class_room:int|classRoom,privilege:UserPrivileges):
@@ -115,22 +119,23 @@ class classRoomService:
         if not "PaymentAccessMaxCount" in body:
             return GOutput(error={"PaymentAccessMaxCount":"cannot be null"})
         #------------------
-        mainchatRoom = chatRoom.objects.create(
-            Name="Main Room",
-            paymentAmount=0,
-            PaymentExpireInterval_MIN=0,
-            PaymentAccessMaxCount=0
-        )
-        classRoom.objects.create(
+        createdClassRoom = classRoom.objects.create(
             OwnedBy=self.Requester,
             HideFromSearch=body["HideFromSearch"],
             Title=body["title"],
             paymentAmount=body["paymentAmount"],
             PaymentExpireInterval_MIN=body["PaymentExpireInterval_MIN"],
             PaymentAccessMaxCount=body["PaymentAccessMaxCount"],
-            chatRoom=mainchatRoom
+            attachmentsCounter = 0
         )
-        return GOutput(issuccess=True)
+        mainchatRoom = chatRoom.objects.create(
+            Name="Main Room",
+            paymentAmount=0,
+            PaymentExpireInterval_MIN=0,
+            PaymentAccessMaxCount=0,
+            classRoom=createdClassRoom
+        )
+        return GOutput({"success":"classRoom created"})
     #------------------
     def defineRoles(self,currentRoom:classRoom,roleTitle,privileges:UserPrivileges)->GeneralOutput:
         if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
@@ -176,18 +181,31 @@ class classRoomService:
         file_hash = hasher.hexdigest()
         fileLicence = AttachmentLicence.objects.filter(FileFingerPrint=file_hash).first()
         if not fileLicence:
-            fileLicence = AttachmentLicence.objects.create(
-                FileFingerPrint = file_hash,
-                RequireSecurity=True
-            )
-            ClassRoomAttachment.objects.create(
-                paymentAmount=paymentAmount,
-                PaymentExpireInterval_MIN=PaymentExpireInterval_MIN,
-                PaymentAccessMaxCount = PaymentAccessMaxCount,
-                Attachments=file,
-                classRoom=currentRoom,
-                attachmentLicence = fileLicence
-            )
+            with transaction.atomic():
+                fileLicence = AttachmentLicence.objects.create(
+                    FileFingerPrint = file_hash,
+                    RequireSecurity=True,
+                    owner=self.Requester
+                )
+                count = currentRoom.attachmentsCounter + 1
+                clAtt = ClassRoomAttachment.objects.create(
+                    paymentAmount=paymentAmount,
+                    PaymentExpireInterval_MIN=PaymentExpireInterval_MIN,
+                    PaymentAccessMaxCount = PaymentAccessMaxCount,
+                    Attachments=file,
+                    attachmentLicence = fileLicence,
+                    order=count,
+                    isOrdered=False
+                )
+                classRoom_ClassRoomAttachment.objects.create(
+                    classRoom=currentRoom,
+                    order=count,
+                    isOrderDepenent=True,
+                    ClassRoomAttachment=clAtt
+                )
+                currentRoom.attachmentsCounter = count
+                currentRoom.save()
+            #------------------
             return GOutput({"success":"attachment uploaded successfully"})
         #------------------
         if not fileLicence.owner != self.Requester:
@@ -198,7 +216,7 @@ class classRoomService:
         return GOutput({"success":f"file uploaded successfully **warning: you already have this file uploaded on the system"})
     #------------------
     def listClassRooms(self,limit:int=100,last_id:int=0)->GeneralOutput:
-        classRooms = self.Requester.OwnedClasses.filter(ID__gt=last_id)[:limit].order_by('ID').values('Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
+        classRooms = self.Requester.OwnedClasses.order_by('ID').filter(ID__gt=last_id)[:limit].values('ID','Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
         return GOutput(list(classRooms))
     #------------------
     def listUsersWithPrivileges(self,currentClassRoom:classRoom,privilege:UserPrivileges,limit:int=100,last_id:int=0):
@@ -208,7 +226,7 @@ class classRoomService:
         if not currentPriv:
             return GOutput(error={"privilege":"not exist privilege"})
         #------------------
-        users = currentPriv.Users.filter(ID__gt=last_id).order_by('ID')[:limit].values('ID', 'username', 'email')
+        users = currentPriv.Users.order_by('ID').filter(ID__gt=last_id)[:limit].values('ID', 'username', 'email')
         return GOutput(list(users))
     #------------------
     def listPrivileges(self,currentClassRoom:classRoom)->GeneralOutput:

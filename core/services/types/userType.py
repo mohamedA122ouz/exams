@@ -25,7 +25,7 @@ class IUserHelper(Protocol):
         Payment_Attachment:Manager["Payment_Attachment"]
         Payment_classRoom:Manager["Payment_classRoom"]
         youCorrected:Manager[Soln]
-        attachmentLicence:AttachmentLicence
+        attachmentLicence:Manager[AttachmentLicence]
         inspector:Manager['Committe']
         allowedIn:Manager['CommitteAllowedList']
         attachmentHistory:Manager['WatchHistory']

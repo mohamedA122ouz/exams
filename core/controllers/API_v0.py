@@ -19,8 +19,10 @@ from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionToFront
+from core.services.utils.priviliages import UserPrivileges
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 #level one
 @require_GET
@@ -182,7 +184,7 @@ def download(request:HttpRequest):
 #------------------
 @require_POST
 @csrf_exempt
-def createClassRoom(request:HttpRequest):
+def createClassRoom(request:HttpRequest):#tested
     body = cast(ClassRoomFromFrontend,json.loads(request.body))
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
@@ -190,12 +192,99 @@ def createClassRoom(request:HttpRequest):
 #------------------
 @require_GET
 @csrf_exempt
-def listclassRooms(request:HttpRequest):
+def listclassRooms(request:HttpRequest):#tested
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
     return ResponseHelper(clService.listClassRooms())
 #------------------
-# @require_GET
-# @csrf_exempt
-# def 
-
+@require_POST
+@csrf_exempt
+def assignExamToClassRoom(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    body = json.loads(request.body)
+    classRoomID:str|int = body.get("classRoom_ID",None)
+    examID:str|int = body.get("exam_ID",None)
+    if classRoomID and isinstance(classRoomID,str) and not classRoomID.isnumeric():
+        classRoomID = int(classRoomID)
+    #------------------
+    if examID and isinstance(examID,str) and not examID.isnumeric():
+        examID = int(examID)
+    #------------------
+    clService = classRoomService(user)
+    currentclassRoom = clService.accessClassRoom(UserPrivileges.SOLVE_EXAM_ALLOWANCE)
+    if not currentclassRoom["isSuccess"]:
+        return currentclassRoom
+    #------------------
+    examServices = GeneralExamServices(user)
+    exam = examServices.validateOwnerShip(cast(int,examID))
+    if not exam["isSuccess"]:
+        return currentclassRoom
+    clService.addExam(currentclassRoom["output"],exam["output"]) #type:ignore
+    return ResponseHelper(GOutput({"success":"exam assigend"})) 
+#------------------
+@require_POST
+@csrf_exempt
+def uploadAttachment(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    classRoomID = request.POST.get('classRoom',None)
+    paymentAmount = request.POST.get('paymentAmount',float(0))
+    PaymentExpireInterval_MIN = request.POST.get('interval_min',0)
+    PaymentAccessMaxCount = request.POST.get('maxCount',0)
+    
+    if isinstance(paymentAmount,str) and not paymentAmount.isnumeric():
+        return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
+    elif paymentAmount:
+        paymentAmount = float(paymentAmount)
+    #------------------
+    if isinstance(PaymentExpireInterval_MIN,str) and not PaymentExpireInterval_MIN.isnumeric():
+        return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
+    elif PaymentExpireInterval_MIN:
+        PaymentExpireInterval_MIN = int(PaymentExpireInterval_MIN)
+    #------------------
+    if isinstance(PaymentAccessMaxCount,str) and not PaymentAccessMaxCount.isnumeric():
+        return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
+    elif PaymentAccessMaxCount:
+        PaymentAccessMaxCount = int(PaymentAccessMaxCount)
+    #------------------
+    
+    if not classRoomID:
+        return ResponseHelper(GOutput(error={'classRoom':"cannot be null"}))
+    #------------------
+    if classRoomID.isnumeric():
+        classRoomID = int(classRoomID)
+    #------------------
+    clService = classRoomService(user)
+    currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
+    if not currentclassRoom["isSuccess"]:
+        return ResponseHelper(currentclassRoom)
+    #------------------
+    if not currentclassRoom["output"]:
+        return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
+    #------------------
+    file = request.FILES["uploaded"]
+    result = clService.addAttachment(currentclassRoom["output"],cast(InMemoryUploadedFile,file),paymentAmount,PaymentExpireInterval_MIN,PaymentAccessMaxCount) #type:ignore
+    if not result["isSuccess"]:
+        return ResponseHelper(result)
+    return ResponseHelper(GOutput({"success":"attahcment uploaded"}))
+#------------------
+@require_GET
+def listAttachment(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    classRoomID = request.GET.get('classRoom')
+    if not classRoomID:
+        return ResponseHelper(GOutput(error={'classRoom':"cannot be null"}))
+    #------------------
+    if classRoomID.isnumeric():
+        classRoomID = int(classRoomID)
+    #------------------
+    clService = classRoomService(user)
+    currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
+    if not currentclassRoom["isSuccess"]:
+        return ResponseHelper(currentclassRoom)
+    #------------------
+    if not currentclassRoom["output"]:
+        return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
+    attachments = clService.listAttachments(currentclassRoom["output"])
+    return ResponseHelper(attachments)
+#------------------
+# def addUser

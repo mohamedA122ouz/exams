@@ -41,5 +41,9 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
             return JsonResponse(model_to_dict(res))
         return JsonResponse(res)
     else:
+        if 'error' in res and res["error"]:
+            for key in res["error"]:
+                if 'not found' in res["error"][key]: #type:ignore
+                    return JsonResponse(res,status=404)
         return JsonResponse(res,status=400)
 #------------------
