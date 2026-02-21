@@ -274,7 +274,9 @@ class Committe(models.Model):
     clRoom = models.ForeignKey(classRoom,models.CASCADE)
     Exam = models.ForeignKey('Exam',on_delete=models.CASCADE,null=False)
     isOpened = models.BooleanField(null=False,default=False)
+    isInspectorIn = models.BooleanField(null=False,default=False)
     inspector = models.ForeignKey(User,models.CASCADE,null=False,related_name='inspector')
+    isExamStarted = models.BooleanField(null=False,default=False)
     if TYPE_CHECKING:
         allowList:Manager['CommitteAllowedList']
         Events:Manager['CommitteEvents']
@@ -283,7 +285,6 @@ class CommitteAllowedList(models.Model):
     users = models.ForeignKey(User,on_delete=models.CASCADE,related_name='allowedIn')
     committe = models.ForeignKey(Committe,on_delete=models.CASCADE)
     present = models.BooleanField(null=False,default=False)
-    
 #------------------
 class CommitteEvents(models.Model):
     eventStr = models.TextField()

@@ -10,7 +10,7 @@ from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, 
 from django.db.models import F,QuerySet
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
-
+from django.db import transaction
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.priviliages import UserPrivileges
 
@@ -273,7 +273,7 @@ class GeneralExamServices:
         return GOutput({"success":"created successfully"})
     #------------------
     # passKey not needed here but the I have to write it cause no method overload her in python
-    def  sendCredentials(self,exam:Exam,passKey:Optional[str]=None)->GeneralOutput[Optional[list[QuestionToFront]]]:
+    def sendCredentials(self,exam:Exam,passKey:Optional[str]=None)->GeneralOutput[Optional[list[QuestionToFront]]]:
         if exam.PassKey and exam.PassKey != passKey and self.Requester != exam.Owner:
             return GOutput(error={"unauthorized":"cannot get exam with wrong passkey"})
         if self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.PRIVATE.value:
@@ -370,7 +370,7 @@ class GeneralExamServices:
         studentSheet.save()
     #------------------
     def useAI(self,soln:list[Soln]):
-        ...
+        ... #we will connect this when needed to the ai to make the written questions corrected
     #------------------
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
         classRoomAuthenticator = classRoomService(self.Requester)
@@ -410,9 +410,6 @@ class GeneralExamServices:
         ...
     #------------------
     def createExamFromWord(self)->dict[str,str]:
-        ...
-    #------------------
-    def checkPermission(self)->dict[str,str]:
         ...
     #------------------
     def timeIsUp(self,exam:Exam):
@@ -483,6 +480,7 @@ class OnlineExam(GeneralExamServices):
         #------------------
         return super().sendCredentials(exam, passKey)
     #------------------
+    @transaction.atomic
     def autoSave(self,exam:Exam,passKey:str,q:Question,student:IUserHelper,ans:str,location:Location_Type)->GeneralOutput:
         if not self._checkPassKey(exam,passKey):
             return GOutput(error={"passKey":"is not correct"})
@@ -521,7 +519,6 @@ class OnlineExam(GeneralExamServices):
                     SolnSheet=currentSolnSheet,
                     soln=newSoln
                 )
-                # currentSolnSheet.Exam_Soln = newSoln
             #------------------
             else:
                 soln.Content = ans
@@ -537,7 +534,6 @@ class OnlineExam(GeneralExamServices):
                 Content=ans,
                 Exam=exam
             )
-            # currentSolnSheet. = newSoln
         #------------------
         else:
             soln.Content = ans

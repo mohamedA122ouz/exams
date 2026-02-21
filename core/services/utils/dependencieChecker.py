@@ -33,7 +33,7 @@ class DependenciesAnalyzer:
         #     'WatchHistory':WatchHistory
         # }
     #------------------
-    def fieldExtractor(self,model:Model):
+    def _fieldExtractor(self,model:Model):
         return [field.name for field in model._meta.concrete_fields]
     #------------------
     def verify(self,dep:AttachmentDependencies):

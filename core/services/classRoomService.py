@@ -8,6 +8,7 @@ from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils import priviliages
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
+from core.services.utils.dependencieChecker import DependenciesAnalyzer
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.priviliages import UserPrivileges
 import magic
@@ -270,13 +271,15 @@ class classRoomService:
         return GOutput(error={"400":"bad request cannot access this resource without order"})
     #------------------
     def _checkDependencies(self,attachment:ClassRoomAttachment):
-        deps = attachment.dependencies.all()
-        repoItems = dependenciesRepo.objects.filter(field_value__in=deps)
-        if len(deps) != len(repoItems):
-            return False
+        depchecker = DependenciesAnalyzer()
+        dependancies = attachment.dependencies.all()
+        if len(dependancies) == 0:
+            return True
+        for dep in dependancies:
+            if not depchecker.verify(dep):
+                return False
         #------------------
-        for dep in deps:
-            ...
+        return True
     #------------------
     def AutocreateCommitee(self,currentClassRoom:classRoom,Exam:Exam):
         if not self._checkForPrivilege(currentClassRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
