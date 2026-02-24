@@ -25,6 +25,20 @@ class CommitteServices:
     def __init__(self,requester:IUserHelper ,*args, **kwargs):
         self.Requester = requester
     #------------------
+    @staticmethod
+    def getCommitte(committeID)->GeneralOutput[Optional[Committe]]:
+        if not committeID:
+            return GOutput(error={"committe":"cannot be null"})
+        #------------------
+        if isinstance(committeID,str):
+            committeID = int(committeID)
+        #------------------
+        committe = Committe.objects.filter(id=committeID).first()
+        if not committe:
+            return GOutput(error={"committe":"cannot be null"})
+        #------------------
+        return GOutput(committe)
+    #------------------
     def _logger(self,eventName:str,committe:Committe):
         eventStr:str = f"[{datetime.now().isoformat()}] - ({self.Requester.username}):{eventName}"#type:ignore
         CommitteEvents.objects.create(
@@ -74,7 +88,7 @@ class CommitteServices:
         self._logger("unauthorized access trying to start exam",committe)
         return GOutput(error={"unauthorized":"cannot start exam"})
     #------------------
-    def getExamCredentials(self,committe:Committe,passKey:str)->GeneralOutput[list[QuestionToFront] | None]:
+    def getExamCredentials(self,committe:Committe,passKey:str | None)->GeneralOutput[list[QuestionToFront] | None]:
         if self.Requester == committe.inspector:
             self._logger("inspector accessed exam",committe)
         #------------------

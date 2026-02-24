@@ -1,18 +1,18 @@
 import json
-from typing import Optional, cast
-from django.http import HttpRequest, HttpResponse,JsonResponse
+import os
+from typing import cast
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
-import pdfkit
-from core.models.Exams_models import Exam, Privileges
-from core.services import examService
+from core.models.Exams_models import Committe, Exam, classRoom
 from core.services.classRoomService import classRoomService
+from core.services.committeService import CommitteServices
 from core.services.questionService import QuestionServices
 from core.services.lecutreService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
-from core.services.types.examTypes import ExamSettings, examRequest
+from core.services.types.examTypes import ExamSettings, Location_Type, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.examParser import autoGeneratorParser
@@ -23,6 +23,7 @@ from core.services.utils.priviliages import UserPrivileges
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.contrib.auth.models import User
 
 #level one
 @require_GET
@@ -132,20 +133,6 @@ def listExams(request:HttpRequest):
         "EndAt",
     ))
     return ResponseHelper(allExams)
-#------------------
-@require_GET
-@csrf_exempt
-def showExam(request:HttpRequest):
-    user = cast(IUserHelper,request.user)
-    examID = request.GET.get("exam_id",None)
-    if not examID:
-        return ResponseHelper({"exam_id":"cannot be null"})
-    examService = GeneralExamServices(user)
-    exam:Optional[Exam] = user.Exams.filter(ID=examID).first()
-    if not exam:
-        return ResponseHelper({"exam":"is not exist"})
-    frontEndData = examService.sendCredentials(exam)
-    return ResponseHelper(frontEndData)
 #------------------
 @require_GET
 @csrf_exempt
@@ -287,4 +274,109 @@ def listAttachment(request:HttpRequest):
     attachments = clService.listAttachments(currentclassRoom["output"])
     return ResponseHelper(attachments)
 #------------------
-# def addUser
+@require_POST
+def createCommitte(request:HttpRequest):
+    body:dict = json.loads(request.body)
+    users = body.get("users",None)
+    clRoomID = body.get('clsRoom',None)
+    examID = body.get('examID',None)
+    if not users:
+        return ResponseHelper(GOutput(error={"users":"cannot be null"}))
+    #------------------
+    if not clRoomID:
+        return ResponseHelper(GOutput(error={"clRoomID":"cannot be null"}))
+    #------------------
+    if not examID:
+        return ResponseHelper(GOutput(error={"examID":"cannot be null"}))
+    #------------------
+    exam = Exam.objects.filter(ID=examID).first()
+    if not exam:
+        return ResponseHelper(GOutput(error={"exam":"is not found"}))
+    #------------------
+    clRoom = classRoom.objects.filter(ID=clRoomID).first()
+    if not clRoom:
+        return ResponseHelper(GOutput(error={"clRoom":"is not found"}),)
+    #------------------
+    try:
+        admins = cast(list[IUserHelper],list(User.objects.filter(id__in=users).all()))
+        user = request.user
+        clService = classRoomService(user)
+        clService.ManualcreateCommitee(clRoom,exam,admins)
+    except Exception as e:
+        return ResponseHelper(GOutput(error={"fail":"something went wrong"}))
+#------------------
+@require_POST
+def joinCommitte(request:HttpRequest):
+    body:dict = json.loads(request.body)
+    committeID = body.get("committe_id",None)
+    if not committeID:
+        return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
+    #------------------
+    committe = Committe.objects.filter(id=committeID).first()
+    if not committe:
+        return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
+    #------------------
+    user = cast(IUserHelper,request.user)
+    committeService = CommitteServices(user)
+    return ResponseHelper(committeService.join(committe))
+#------------------
+@require_POST
+def showExam(request:HttpRequest):
+    body:dict = json.loads(request.body)
+    committeID = body.get("committe_id",None)
+    passkey = body.get("passkey",None)
+    user = cast(IUserHelper,request.user)
+    committeOuput = CommitteServices.getCommitte(committeID)
+    if not committeOuput["isSuccess"]:
+        return ResponseHelper(committeOuput)
+    #------------------
+    committe = cast(Committe,committeOuput["output"])
+    committeService = CommitteServices(user)
+    return ResponseHelper(committeService.getExamCredentials(committe,passkey))
+#------------------
+@require_POST
+def startCommitte(request:HttpRequest):
+    body:dict = json.loads(request.body)
+    user = cast(IUserHelper,request.user)
+    committeID = body.get("committe_id",None)
+    committeOuput = CommitteServices.getCommitte(committeID)
+    if not committeOuput["isSuccess"]:
+        return ResponseHelper(committeOuput)
+    #------------------
+    committeService = CommitteServices(user)
+    committeService.startCommitte(committeOuput["output"])#type:ignore
+    return ResponseHelper(GOutput({"success":"commmitte started"}))
+#------------------
+@require_POST
+def solveExam(request:HttpRequest):
+    body:dict = json.loads(request.body)
+    user = cast(IUserHelper,request.user)
+    committeService = CommitteServices(user)
+    questionID = body.get("qID",None)
+    if not questionID:
+        return ResponseHelper(GOutput(error={"qID":"cannot be null"}))
+    #------------------
+    passkey = body.get("passkey",None)
+    if not passkey:
+        return ResponseHelper(GOutput(error={"passKey":"cannot be null"}))
+    #------------------
+    committeID = body.get("committe_id",None)
+    if not committeID:
+        return ResponseHelper(GOutput(error={"committeID":"cannot be null"}))
+    #------------------
+    ans = body.get("ans",None)
+    if not ans:
+        return ResponseHelper(GOutput(error={"ans":"cannot be null"}))
+    #------------------
+    location:Location_Type = cast(Location_Type,body.get("location",None))
+    if not location or not location["Xaxis"] or not location["Yaxis"]:
+        return ResponseHelper(GOutput(error={"ans":"cannot be null"}))
+    #------------------
+    committeOuput = CommitteServices.getCommitte(committeID)
+    committe = committeOuput["output"]
+    if not committe:
+        return ResponseHelper(GOutput(error={"committe":"not found"}))
+    #------------------
+    committeService.solveExam(questionID,passkey,committe,ans,location)
+    return ResponseHelper(GOutput({"success":"commmitte started"}))
+#------------------

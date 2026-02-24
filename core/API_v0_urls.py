@@ -20,13 +20,17 @@ urlpatterns = [
     path('question/create',API_v0.createQuestion,name="API_v0_createQuestion"),
     path('exams/create',API_v0.createExam,name="createExam"),
     path('exams',API_v0.listExams,name="listExams"),
-    path('exam/show',API_v0.showExam,name="showExam"),
     path('exams/download',API_v0.download,name="download"),
     path('classes',API_v0.listclassRooms,name="listclassRooms"),
+    path('classes/join',API_v0.listclassRooms,name="listclassRooms"),
     path('classes/create',API_v0.createClassRoom,name="createClassRoom"),
     path('classes/get/attachments',API_v0.listAttachment,name="listAttachment"),
     path('classes/upload/attachments',API_v0.uploadAttachment,name="uploadAttachment"),
-    path('classes/assign/exam',API_v0.assignExamToClassRoom,name="assignExamToClassRoom")
-    
-    
+    path('classes/assign/exam',API_v0.assignExamToClassRoom,name="assignExamToClassRoom"),
+    path('classes/committe/create',API_v0.createCommitte,name="createCommitte"),
+    path('committe/create',API_v0.assignExamToClassRoom,name="assignExamToClassRoom"),
+    path('committe/join',API_v0.joinCommitte,name="joinCommitte"),
+    path('committe/start',API_v0.startCommitte,name="startCommitte"),
+    path('committe/exam/show',API_v0.showExam,name="showExam"),
+    path('committe/exam/solve',API_v0.solveExam,name="solveExam")
 ]

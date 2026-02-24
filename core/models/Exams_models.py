@@ -7,6 +7,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode, ShareWithEnum
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
+import uuid
 if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ManyRelatedManager,ForwardOneToOneDescriptor
 
@@ -293,6 +294,7 @@ class WatchHistory(models.Model):
     user = models.ForeignKey(User,models.CASCADE,related_name='attachmentHistory')
     attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE)
 #------------------
+
 
 #-----------------------------------------------
 #-----------------------------------------------
