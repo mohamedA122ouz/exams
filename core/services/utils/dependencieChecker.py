@@ -18,9 +18,9 @@ class DependenciesAnalyzer:
         for dep in dependencies:
             self.ALLOWED_TABLES.setdefault(dep.dependOnTable,getattr(Exams_models,dep.dependOnTable))
             self.ALLOWED_TABLES_FIELDS.setdefault(dep.dependOnTable,json.loads(dep.allowedFields))
-        #------------------#-----------
+        #---------------#-----------
         # EXAMPLE TO WHAT IS THE OUTPUT
-        #------------------#-----------
+        #---------------#-----------
         # self.ALLOWED_TABLES_FIELDS = {
         #     'solutionsSheet':[
         #         'TotalMark'
@@ -32,56 +32,56 @@ class DependenciesAnalyzer:
         #     'solutionsSheet':solutionsSheet,
         #     'WatchHistory':WatchHistory
         # }
-    #------------------
+    #---------------
     def _fieldExtractor(self,model:Model):
         return [field.name for field in model._meta.concrete_fields]
-    #------------------
+    #---------------
     def verify(self,dep:AttachmentDependencies):
         jsonItems:AttachDependOn = cast(AttachDependOn,json.loads(dep.jsonDep))
         if not 'conditionsOnFields' in jsonItems:
             return False
-        #------------------
+        #---------------
         if not 'dependOnTable' in jsonItems:
             return False
-        #------------------
+        #---------------
         table = jsonItems['dependOnTable']
         if not table in self.ALLOWED_TABLES_FIELDS and not table in self.ALLOWED_TABLES:
             return False
-        #------------------
+        #---------------
         tableFieldsSorted = self.ALLOWED_TABLES_FIELDS[table]
         notIncludedConditions:list[str] = []
         filters = []
         for field in jsonItems['conditionsOnFields']:
             if not field in tableFieldsSorted:
                 notIncludedConditions.append(field)
-            #------------------
+            #---------------
             neededResult = jsonItems['conditionsOnFields'][field]
             filters.append(Q(**{field:neededResult}))
-        #------------------
+        #---------------
         for condition in notIncludedConditions:
             field,condition = condition.split('__',1)
             neededResult = jsonItems['conditionsOnFields'][condition]
             if condition == 'gte':
                 filters.append(Q(**{f"{field}__gte":neededResult}))
-            #------------------
+            #---------------
             elif condition == 'lte':
                 filters.append(Q(**{f"{field}__lte":neededResult}))
-            #------------------
+            #---------------
             elif condition == 'lt':
                 filters.append(Q(**{f"{field}__lt":neededResult}))
-            #------------------
+            #---------------
             elif condition == 'gt':
                 filters.append(Q(**{f"{field}__gt":neededResult}))
-            #------------------
+            #---------------
             elif condition == 'contains':
                 filters.append(Q(**{f"{field}__contains":neededResult}))
-            #------------------
+            #---------------
             elif condition == 'not__contains':
                 filters.append(~Q(**{f"{field}__contains":neededResult}))
-            #------------------
-        #------------------
+            #---------------
+        #---------------
         Query = reduce(and_,filters)
         neededTable:Model = self.ALLOWED_TABLES[jsonItems['dependOnTable']]
         return neededTable.objects.filter(Query).exists()
-    #------------------
-#------------------CLASS_ENDED#------------------
+    #---------------
+#---------------CLASS_ENDED#---------------

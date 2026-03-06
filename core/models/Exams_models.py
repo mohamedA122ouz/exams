@@ -7,9 +7,10 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode, ShareWithEnum
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
-import uuid
+
 if TYPE_CHECKING:
-    from django.db.models.fields.related_descriptors import ManyRelatedManager,ForwardOneToOneDescriptor
+    from store.models import storePayment
+    from django.db.models.fields.related_descriptors import ManyRelatedManager
 
 
 
@@ -19,21 +20,21 @@ class ProfileSettings(models.Model):
     User = models.OneToOneField(User,on_delete=models.CASCADE,related_name="Settings")
     socketID = models.TextField(null=True,default=None)
     Warnings = models.SmallIntegerField(default=3)
-#------------------
+#---------------
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
     User = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Years")
     Terms : models.Manager["Term"]
     Subjects : models.Manager["Subject"]
-#------------------
+#---------------
 class Term(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
     Year = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Terms")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Terms",null=True,default=None)
     Subjects : models.Manager["Subject"]
-#------------------
+#---------------
 class Subject(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
@@ -41,14 +42,14 @@ class Subject(models.Model):
     Term = models.ForeignKey(Term,on_delete=models.CASCADE,related_name="Subjects")
     Year:models.ForeignKey["Year"] = models.ForeignKey(Year,on_delete=models.CASCADE,related_name="Subjects",default=None,null=True)
     Lectures : models.Manager["Lecture"]
-#------------------
+#---------------
 class Lecture(models.Model):
     ID = models.AutoField(primary_key=True)
     Name = models.CharField(max_length=50)
     Subject = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Lectures")
     User =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Lectures",null=True,default=None)
     Questions : models.Manager["Question"]
-#------------------
+#---------------
 class Question(models.Model):
     createdAt = models.DateField(null=False)
     ID = models.AutoField(primary_key=True)
@@ -64,7 +65,7 @@ class Question(models.Model):
         Exams:ManyRelatedManager["Exam"] # only owner should see this else shouldn't see
         Solns:Manager["Soln"]
         ExamQuestionsTable:Manager["Exam_Questions"]
-#------------------
+#---------------
 class Exam(models.Model):
     ID = models.AutoField(primary_key=True)
     TotalMark = models.FloatField(null=False,default=0)
@@ -89,26 +90,26 @@ class Exam(models.Model):
         ExamBlackListTable :ManyRelatedManager["Exam_BlackList"]
         ClassRooms:ManyRelatedManager["classRoom"]
         SolutionSheets:Manager["solutionsSheet"]
-#------------------
+#---------------
 class Exam_BlackList(models.Model):
     student = models.ForeignKey(User,models.CASCADE,related_name="ExamBlackListTable")
     exams = models.ForeignKey(Exam,models.CASCADE,related_name="ExamBlackListTable")
     Reason = models.TextField(null=True,blank=True)
-#------------------
+#---------------
 class Exam_Questions(models.Model):
     Exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     Question = models.ForeignKey(Question, on_delete=models.CASCADE)
     Order = models.IntegerField(default=0)
     degree = models.FloatField(default=0)
     sectionName = models.CharField(max_length=150,null=True,blank=True)
-#------------------
+#---------------
 class Location(models.Model):
     ID = models.AutoField(primary_key=True)
     Xaxis = models.FloatField()
     Yaxis = models.FloatField()
     buildingArea = models.FloatField(null=False)
     Exam = models.ForeignKey(Exam,on_delete=models.CASCADE,related_name="Locations")
-#------------------
+#---------------
 class Soln(models.Model):
     ID = models.AutoField(primary_key=True)
     SolvedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Solns")
@@ -118,7 +119,7 @@ class Soln(models.Model):
     SolutionSheet = models.ForeignKey("solutionsSheet",on_delete=models.CASCADE,related_name="solutions")
     Question:models.ForeignKey["Question"] = models.ForeignKey("Question",on_delete=models.CASCADE,related_name="Solns")
     correctedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="youCorrected",null=True,blank=True)
-#------------------
+#---------------
 class classRoom(models.Model):
     #PAYMENT SETTINGS
     paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
@@ -138,7 +139,7 @@ class classRoom(models.Model):
         Attachments: ManyRelatedManager["ClassRoomAttachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
         Committes:Manager['Committe']
-#------------------
+#---------------
 class ClassRoomAttachment(models.Model):
     #PAYMENT SETTINGS
     paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
@@ -159,19 +160,19 @@ class ClassRoomAttachment(models.Model):
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
         relatedAttachment:ManyRelatedManager["ClassRoomAttachment"]
         dependencies:Manager["AttachmentDependencies"]
-    #------------------
-#------------------
+    #---------------
+#---------------
 class AttachmentDependencies(models.Model):
     ID = models.AutoField(primary_key=True)
     jsonDep = models.JSONField()
     attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE,related_name='dependencies')
-#------------------
+#---------------
 class classRoom_ClassRoomAttachment(models.Model):
     classRoom = models.ForeignKey("classRoom",models.CASCADE,"cl_clAttach")
     order = models.IntegerField()
     isOrderDepenent = models.BooleanField(default=False)
     ClassRoomAttachment = models.ForeignKey("ClassRoomAttachment",models.CASCADE,"cl_clAttach")
-#------------------
+#---------------
 class Payment_classRoom(models.Model):
     TransactionTime = models.DateTimeField(auto_now=True)
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
@@ -179,7 +180,7 @@ class Payment_classRoom(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
     classRoom:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
-#------------------
+#---------------
 
 class Payment_Attachment(models.Model):
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
@@ -188,17 +189,17 @@ class Payment_Attachment(models.Model):
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
     classRoomAttachment = models.ForeignKey("ClassRoomAttachment",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
     TransactionTime = models.DateTimeField(auto_now=True)
-#------------------
+#---------------
 class classRoom_Exam(models.Model):
     ID = models.AutoField(primary_key=True)
     Exams = models.ForeignKey(Exam,on_delete=models.CASCADE)
     classRoom = models.ForeignKey(classRoom,on_delete=models.CASCADE)
-#------------------
+#---------------
 class supportedLanguages(models.Model):
     Name = models.CharField(max_length=2,null=False)
     ID = models.AutoField(primary_key=True)
     Profiles:models.Manager["ProfileSettings"]
-#------------------
+#---------------
 class solutionsSheet(models.Model): 
     #this is a bug cause soln sheet must be one include all soln and question so the many to many with exam and and soln must have other class
     LastUpdate = models.DateTimeField(null=False,default=datetime.now())
@@ -210,7 +211,7 @@ class solutionsSheet(models.Model):
     Exam = models.ForeignKey("Exam",on_delete=models.CASCADE,related_name="SolutionSheets")
     if TYPE_CHECKING:
         Solns:Manager["Soln"]
-#------------------
+#---------------
 class Privileges(models.Model):
     # Privileges
     Name = models.CharField(null=False,max_length=50)
@@ -218,7 +219,7 @@ class Privileges(models.Model):
     ClassRooms:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
     Users = models.ManyToManyField(User,related_name="Privileges",default=1)
     Privilege = models.IntegerField(null=False,blank=False,default=0)
-#------------------
+#---------------
 class chatRoom(models.Model):
     # PAYMENT SETTINGS
     paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
@@ -231,7 +232,7 @@ class chatRoom(models.Model):
         # Privileges:ManyRelatedManager["Privileges"]
         Messages:Manager["messages"]
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
-#------------------
+#---------------
 class Payment_ChatRoom(models.Model):
     TransactionTime = models.DateTimeField(auto_now=True)
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
@@ -239,12 +240,12 @@ class Payment_ChatRoom(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
     chatRoom = models.ForeignKey("chatRoom",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
-#------------------
+#---------------
 class messages(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     text = models.TextField(null=False)
     classRoom = models.ForeignKey("classRoom",on_delete=models.CASCADE)
-#------------------
+#---------------
 class paymentLocker(models.Model):
     totalAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     lastUpdate = models.DateTimeField(null=False)
@@ -253,7 +254,8 @@ class paymentLocker(models.Model):
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
         Payment_Attachment:Manager["Payment_Attachment"]
         Payment_classRoom:Manager["Payment_classRoom"]
-#------------------
+        Payment_store:Manager[storePayment]
+#---------------
 class AttachmentLicence(models.Model):
     ID  = models.AutoField(primary_key=True)
     owner = models.ForeignKey(User,on_delete=models.CASCADE,related_name='attachmentLicence')
@@ -262,7 +264,7 @@ class AttachmentLicence(models.Model):
     RequireSecurity = models.BooleanField(default=False)
     if TYPE_CHECKING:
         classRoomAttachment:ClassRoomAttachment
-#------------------
+#---------------
 class dependenciesRepo(models.Model): 
     # This table must not connect with other tables
     # This table is just a placeholder for the dependencies
@@ -270,7 +272,7 @@ class dependenciesRepo(models.Model):
     dependentTable = models.TextField() # main table like Attachment 
     dependOnTable = models.TextField() # main table depend on this table like exams
     allowedFields = models.JSONField() # ['ID','Field1',...] 
-#------------------
+#---------------
 class Committe(models.Model):
     clRoom = models.ForeignKey(classRoom,models.CASCADE)
     Exam = models.ForeignKey('Exam',on_delete=models.CASCADE,null=False)
@@ -281,27 +283,37 @@ class Committe(models.Model):
     if TYPE_CHECKING:
         allowList:Manager['CommitteAllowedList']
         Events:Manager['CommitteEvents']
-#------------------
+#---------------
 class CommitteAllowedList(models.Model):
     users = models.ForeignKey(User,on_delete=models.CASCADE,related_name='allowedIn')
     committe = models.ForeignKey(Committe,on_delete=models.CASCADE)
     present = models.BooleanField(null=False,default=False)
-#------------------
+#---------------
 class CommitteEvents(models.Model):
     eventStr = models.TextField()
     committe = models.ForeignKey(Committe,models.CASCADE,related_name='Events')
 class WatchHistory(models.Model):
     user = models.ForeignKey(User,models.CASCADE,related_name='attachmentHistory')
     attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE)
-#------------------
+#---------------
+class shareWithLink(models.Model):
+    tableName = models.TextField()
+    address = models.TextField()
+    itemID = models.IntegerField()
+    command = models.TextField()
+    class meta:
+        constrains = [
+            models.UniqueConstraint(fields=['tableName','address','itemID'],name="unique_together")
+        ]
+    #---------------
+#---------------
 
-
-#-----------------------------------------------
-#-----------------------------------------------
-#-----------------------------------------------
-#-----------------------------------------------
-#-----------------------------------------------
-#------------------MONEY-PART#------------------
+#--------------------------------------------
+#--------------------------------------------
+#--------------------------------------------
+#--------------------------------------------
+#--------------------------------------------
+#---------------MONEY-PART#---------------
 class donationTransactions(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.PROTECT,null=False)
     OwnerName = models.CharField(max_length=150,null=False,blank=True)
@@ -309,12 +321,12 @@ class donationTransactions(models.Model):
     Method = models.CharField(max_length=50,null=False,blank=True)
     Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     Type = models.IntegerField(choices=TransactionType.choices())
-#------------------
+#---------------
 class donationBox(models.Model):
     balance = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     lastTransaction = models.ForeignKey(donationTransactions,on_delete=models.PROTECT)
-#------------------
+#---------------
 class balance(models.Model):
     Owner = models.OneToOneField(User,on_delete=models.PROTECT,null=False,related_name="Balance")
     Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-#------------------
+#---------------

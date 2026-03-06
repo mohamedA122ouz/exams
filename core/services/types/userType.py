@@ -29,4 +29,4 @@ class IUserHelper(Protocol):
         inspector:Manager['Committe']
         allowedIn:Manager['CommitteAllowedList']
         attachmentHistory:Manager['WatchHistory']
-#------------------
+#---------------

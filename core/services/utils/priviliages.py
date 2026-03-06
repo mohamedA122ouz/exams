@@ -31,4 +31,4 @@ class UserPrivileges(IntFlag):
     _ACCESS_PAID_FOR_FREE = 28672 # all access without payment
     _ATTACHMENT_C_UD = 458752 # Create _ Update Delete
     _OWNER_PRIVILEGES = 524287 # all
-#------------------
+#---------------

@@ -12,15 +12,15 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
         return JsonResponse({"null":"server return null"},status=500)
     if isinstance(res,Model):
         return JsonResponse(model_to_dict(res))
-    #------------------
+    #---------------
     if "error" in res and "isSuccess" in res and "output" in res:
         _pOutput = cast(GeneralOutput,res)
         if _pOutput["error"] is None:
             return ResponseHelper(_pOutput["output"])
         if _pOutput["output"] is None:
             return ResponseHelper(_pOutput["error"])
-        #------------------
-    #------------------
+        #---------------
+    #---------------
     if isinstance(res,list):
         if len(res) == 0:
             return JsonResponse({"list":[]})
@@ -28,12 +28,12 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
             item = res[0]
             if isinstance(item,Model):
                 return JsonResponse({"list":[ model_to_dict(cast(Model,i)) for i in res]})
-            #------------------
+            #---------------
             else:
                 return JsonResponse({"list":res})
-            #------------------
-        #------------------
-    #------------------
+            #---------------
+        #---------------
+    #---------------
     if hasattr(res,"fail") or "fail" in res or "faild" in res or hasattr(res,"faild"):
         return JsonResponse(res,status=500)
     elif hasattr(res,"success") or "success" in res:
@@ -46,4 +46,4 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
                 if 'not found' in res["error"][key]: #type:ignore
                     return JsonResponse(res,status=404)
         return JsonResponse(res,status=400)
-#------------------
+#---------------

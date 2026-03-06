@@ -9,13 +9,13 @@ def GOutput(output:Optional[T]=None,error:Optional[dict[str,str]]=None,issuccess
         issuccess = False
         if output:
             issuccess = True
-        #------------------
+        #---------------
         elif not error:
             issuccess = True
-    #------------------
+    #---------------
     return {
         'error':error,
         'isSuccess':issuccess,
         'output':output
     }
-#------------------
+#---------------

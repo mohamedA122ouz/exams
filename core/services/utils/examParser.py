@@ -41,14 +41,14 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                 if _str.strip().startswith('CHOICE@') and len(ansString) == 0:
                     isMultiChoice = True
                     choices.append(_str.replace('CHOICE@','').strip())
-                #------------------
+                #---------------
                 elif _str.strip().startswith('CHOICE@') and len(ansString) != 0:
                     return {
                             "error":{"examText":"Answer cannot be in the middle of choices it must be at the end"},
                             "isSuccess":False,
                             "output":None
                         }
-                #------------------
+                #---------------
                 elif 'http://' in _str or 'https://' in _str:# if it is a url
                     if _str.strip().startswith('IMAGE@'):
                         questionText += f"${attachmentID}"
@@ -57,7 +57,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('IMAGE@','')
                         })
                         attachmentID+=1
-                    #------------------
+                    #---------------
                     elif _str.strip().startswith('AUDIO@'):
                         questionText += f"${attachmentID}"
                         attachment.append({
@@ -65,7 +65,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('AUDIO@','')
                         })
                         attachmentID += 1
-                    #------------------
+                    #---------------
                     elif _str.strip().startswith('VIDEO@'):
                         questionText += f"${attachmentID}"
                         attachment.append({
@@ -73,7 +73,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('VIDEO@','')
                         })
                         attachmentID += 1
-                    #------------------
+                    #---------------
                     elif _str.strip().startswith('YOUTUBE@'):
                         questionText += f"${attachmentID}"
                         _str = _str.replace('YOUTUBE@','')
@@ -90,7 +90,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "isSuccess":False,
                             "output":None
                         }
-                #------------------
+                #---------------
                 else:# if the attachment is uploaded to the server
                     if 'IMAGE@' in _str:
                         questionText += f"${attachmentID}"
@@ -99,7 +99,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('IMAGE@','/static/')
                         })
                         attachmentID += 1
-                    #------------------
+                    #---------------
                     elif 'AUDIO@' in _str:
                         questionText += f"${attachmentID}"
                         attachment.append({
@@ -107,7 +107,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('AUDIO@','/static/')
                         })
                         attachmentID += 1
-                    #------------------
+                    #---------------
                     elif 'VIDEO@' in _str and len(choices) > 0:
                         questionText += f"${attachmentID}"
                         attachment.append({
@@ -115,8 +115,8 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "link":_str.replace('VIDEO@','/static/')
                         })
                         attachmentID += 1
-                    #------------------
-                #------------------
+                    #---------------
+                #---------------
                 
                 if _str.strip().startswith("ANS@"):
                     ansString = _str.replace("ANS@","")
@@ -128,10 +128,10 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             isMultiChoice = False
                         elif item.isnumeric() and int(item) > len(choices):
                             isMultiChoice = False
-                    #------------------
+                    #---------------
                     if len(strArr) > 1 and isMultiChoice:
                         haveMoreThanOneAns = True
-                #------------------
+                #---------------
                 if _str.strip().startswith("EASE@"):
                     ease = _str.replace("EASE@","")
                     if not ease.isnumeric():
@@ -140,7 +140,7 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "isSuccess":False,
                             "output":None
                         }
-                    #------------------
+                    #---------------
                     easeAsInt = int(ease)
                     if easeAsInt > QuestionEase.HARD.value:
                         return {
@@ -148,22 +148,22 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
                             "isSuccess":False,
                             "output":None
                         }
-                    #------------------
+                    #---------------
                     questionItem["ease"] = easeAsInt
-            #------------------
-        #------------------
+            #---------------
+        #---------------
         if haveMoreThanOneAns and isMultiChoice:
             questionItem["questionType"] = QuestionType.MCQ_MORE_ANS.value
             questionItem["choices"] = choices
-        #------------------
+        #---------------
         elif not haveMoreThanOneAns and isMultiChoice:
             questionItem["questionType"] = QuestionType.MCQ_ONE_ANS.value
             questionItem["choices"] = choices
-        #------------------
+        #---------------
         elif not isMultiChoice:
             questionItem["questionType"] = QuestionType.WRITTEN_QUETION.value
             questionItem["choices"] = None
-        #------------------
+        #---------------
         if isMultiChoice and len(ansString) == 0:
             return {
                 "error":{"examText":"choices questions cannot be created without any answers"},
@@ -177,9 +177,9 @@ def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]
         questionItem["answers"] = ansString.strip()
         questionItem["attachments"] = attachment if len(attachment)>0 else None
         ansList.append(questionItem)
-    #------------------
+    #---------------
     return GOutput(ansList)
-#------------------
+#---------------
 def toFrontendFormHelper(q:Question)->GeneralOutput[Optional[list[QuestionFromFront]]]:
     """Takes Question from database and fix it to allow parser to see question answer"""
     txt = q.Text_Url
@@ -187,9 +187,9 @@ def toFrontendFormHelper(q:Question)->GeneralOutput[Optional[list[QuestionFromFr
     items =  toFrontendForm(txt)
     if items["output"] and len(items["output"]) > 0:
         return GOutput(items["output"],items["error"],items["isSuccess"]) 
-    #------------------
+    #---------------
     return GOutput(error=items["error"])
-#------------------
+#---------------
 def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)->GeneralOutput[Optional[list[Question]]]:
     examAGDict:ExamAutoGenerator = cast(ExamAutoGenerator,{})
     if isinstance(examJson,str):
@@ -198,34 +198,34 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
         examAGDict = examJson
     if not "generatorSettings" in examAGDict:
         return GOutput(error={"generatorSettings":"generator setting not exist"})
-    #------------------
+    #---------------
     if not "questions" in examAGDict:
         return {
             "error":{"questions":"exam questions doesn't exist"},
             "isSuccess":False,
             "output":None
         }
-    #------------------
+    #---------------
     examSettings:AutoGenExamSetting = examAGDict['generatorSettings']
     if not "yearID" in examSettings:
         return GOutput(error={"generatorSettings":"generatorSettings.yearID doesn't exist"})
-    #------------------
+    #---------------
     if not "subjectID" in examSettings:
         return GOutput(error={"generatorSettings":"generatorSettings.subjectID doesn't exist"})
-    #------------------
+    #---------------
     if not "termID" in examSettings:
         return GOutput(error={"generatorSettings":"generatorSettings.termID doesn't exist"})
-    #------------------
+    #---------------
     if not "randomization" in examSettings:
         return GOutput(error={"generatorSettings":"generatorSettings.randomization settings doesn't exist"})
-    #------------------
+    #---------------
     examQuestions:list[QuestionSelector] = examAGDict['questions']
     if not isinstance(examQuestions,list):
         raise "exam questions is not in list"
     subject = user.Subjects.filter(ID=examSettings['subjectID'],Term__ID=examSettings['termID'],Year__ID=examSettings['yearID']).first()
     if not subject:
         return GOutput(error={"subject":f"cannot find subject: {examSettings} in year:{examSettings['yearID']} and term:{examSettings['termID']}"})
-    #------------------
+    #---------------
     questions:list[Question] = []
     for i,question in enumerate(examQuestions):
         if not "count" in question:
@@ -236,11 +236,11 @@ def autoGeneratorParser(examJson:Union[str,ExamAutoGenerator],user:IUserHelper)-
         if not qSet:
             return GOutput(error={"qSet":f"is none or empty"})
         questions+=qSet[:question['count']]
-    #------------------
+    #---------------
     if examSettings['randomization']:
         random.shuffle(questions)
     return GOutput(questions)
-#------------------
+#---------------
 def toDBFormParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionToInsert]]:
     """Takes json from frontend and parser it to allow storing it into database"""
     generateNumber:list[int] = random.sample(range(97890900,97899999),4)
@@ -257,11 +257,11 @@ def toDBFormParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionT
         for i,attachment in enumerate(jsonItem["attachments"]):
             rp = f"~IMAGE@{attachment['link']}" if attachment["type"] == 'img'else f'~{attachment["type"].upper()}@{attachment["link"]}'
             jsonItem["question"] = jsonItem["question"].replace(f'${i}',rp)
-        #------------------
-    #------------------
+        #---------------
+    #---------------
     if jsonItem["choices"]:
         jsonItem["question"] += "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
-    #------------------
+    #---------------
     jsonItem["question"] = jsonItem["question"].replace(_dollar,"$")
     jsonItem["question"] = jsonItem["question"].replace(_simiColon,"#;")
     jsonItem["question"] = jsonItem["question"].replace(_atSign,"#@")
@@ -272,4 +272,4 @@ def toDBFormParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionT
     item["type"] = jsonItem["questionType"]
     item["lecture_id"] = jsonItem["lecture_id"]
     return GOutput(item)
-#------------------
+#---------------

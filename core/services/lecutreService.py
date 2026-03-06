@@ -11,7 +11,7 @@ class LectureService:
         if not lecture:
             return {"lecture":"no lecture found"}
         return list(lecture)
-    #------------------
+    #---------------
     def createLectures(self,user,name:Optional[str],subject_id:Optional[int|str])->dict[str,str]:
         user = cast(IUserHelper,user)
         if not name:
@@ -30,5 +30,5 @@ class LectureService:
         if not lecture:
             return {"fail":"no lecture created"}
         return {"success":"successful"}
-    #------------------
-#------------------CLASS_ENDED#------------------
+    #---------------
+#---------------CLASS_ENDED#---------------

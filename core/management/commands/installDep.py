@@ -6,9 +6,9 @@ from core.models.Exams_models import dependenciesRepo, supportedLanguages
 
 class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> str | None:
-        #------------------#-----------
+        #---------------#-----------
         # EXAMPLE TO WHAT IS THE OUTPUT
-        #------------------#-----------
+        #---------------#-----------
         # self.ALLOWED_TABLES_FIELDS = {
         #     'solutionsSheet':[
         #         'TotalMark'
@@ -38,5 +38,5 @@ class Command(BaseCommand):
         )
         
         dependenciesRepo.objects.bulk_create(items)
-    #------------------
-#------------------
+    #---------------
+#---------------

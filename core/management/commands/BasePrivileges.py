@@ -19,5 +19,5 @@ class Command(BaseCommand):
         Privileges.objects.create(Name="Helper Teacher",Privilege=helperTeacher)
         Privileges.objects.create(Name="Admin",Privilege=adminPriv)
         Privileges.objects.create(Name="Student",Privilege=student)
-    #------------------
-#------------------
+    #---------------
+#---------------

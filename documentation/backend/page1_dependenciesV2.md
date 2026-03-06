@@ -13,7 +13,7 @@ class dependenciesRepo(models.Model):
     dependentTable = models.TextField()
     dependOnTable = models.TextField() 
     allowedFields = models.JSONField()
-#------------------
+#---------------
 ```
 
 - definition in TypeScript
@@ -50,7 +50,7 @@ class AttachmentDependencies(models.Model):
     ID = models.AutoField(primary_key=True)
     jsonDep = models.JSONField()
     attachment = models.ForeignKey(ClassRoomAttachment,on_delete=models.CASCADE,related_name='dependencies')
-#------------------
+#---------------
 ```
 
 ```ts

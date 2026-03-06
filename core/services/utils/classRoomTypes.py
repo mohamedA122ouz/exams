@@ -7,4 +7,4 @@ class ClassRoomFromFrontend(TypedDict):
     paymentAmount:float
     PaymentExpireInterval_MIN:int
     PaymentAccessMaxCount:int
-#------------------
+#---------------

@@ -29,21 +29,21 @@ from django.contrib.auth.models import User
 @require_GET
 def showYears(request:HttpRequest):
     return ResponseHelper(YearService().showYears(request.user))
-#------------------
+#---------------
 @csrf_exempt
 @require_POST
 def createYear(request:HttpRequest):
     body:dict = json.loads(request.body)
     yearName = body.get("name",None)
     return ResponseHelper(YearService().createYear(request.user,yearName))
-#------------------
+#---------------
 #level two
 @require_GET
 @csrf_exempt
 def showTerms(request:HttpRequest)->JsonResponse:
     yearID = request.GET.get("year_id",None)
     return ResponseHelper(TermService().showTerms(request.user,yearID))
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createTerm(request:HttpRequest):
@@ -56,7 +56,7 @@ def createTerm(request:HttpRequest):
 @csrf_exempt
 def showSubjects(request:HttpRequest):
     return ResponseHelper(SubjectService().showSubjects(request.user))
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createSubject(request:HttpRequest):
@@ -65,13 +65,13 @@ def createSubject(request:HttpRequest):
     termID = body.get("term_id",None)
     name =body.get("name",None)
     return ResponseHelper(SubjectService().createSubject(request.user,yearID,termID,name))
-#------------------
+#---------------
 @require_GET
 @csrf_exempt
 def showLectures(request:HttpRequest)->JsonResponse:
     subjectID = request.GET.get("subject_id",None)
     return ResponseHelper(LectureService().showLectures(request.user,subjectID))
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createLectures(request:HttpRequest)->JsonResponse:
@@ -79,19 +79,19 @@ def createLectures(request:HttpRequest)->JsonResponse:
     name = body.get("name",None)
     subjectID = body.get("subject_id",None)
     return ResponseHelper(LectureService().createLectures(request.user,name,subjectID))
-#------------------
+#---------------
 @require_GET
 @csrf_exempt
 def showQuestions(request:HttpRequest)->JsonResponse:
     lecture = request.GET.get("lecture_id",None)
     return ResponseHelper(QuestionServices(request.user).showQuestions(lecture))
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createQuestion(request:HttpRequest)->JsonResponse:
     editor:QuestionFromFront = json.loads(request.body)
     return ResponseHelper(QuestionServices(request.user).createQuestion(editor))
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createExam(request:HttpRequest)->JsonResponse:
@@ -112,7 +112,7 @@ def createExam(request:HttpRequest)->JsonResponse:
     if output["isSuccess"]:
         return ResponseHelper({"success":"exam created successfully"})
     return ResponseHelper(output)
-#------------------
+#---------------
 @require_GET
 @csrf_exempt
 def listExams(request:HttpRequest):
@@ -133,7 +133,7 @@ def listExams(request:HttpRequest):
         "EndAt",
     ))
     return ResponseHelper(allExams)
-#------------------
+#---------------
 @require_GET
 @csrf_exempt
 def download(request:HttpRequest):
@@ -145,19 +145,19 @@ def download(request:HttpRequest):
     examCre = exam_GEN.sendCredentials(exam,"killer")
     if not examCre["isSuccess"] and not examCre["output"]:
         return ResponseHelper(examCre)
-    #------------------
+    #---------------
     questions:list[QuestionToFront] = examCre["output"]#type:ignore
     sections:dict[str,list[QuestionToFront]] = {}
     for i,q in enumerate(questions):
         if not q["sectionName"] in sections:
             if not q["sectionName"]:
                 q["sectionName"] = ""
-            #------------------
+            #---------------
             sections[q["sectionName"]] = [q]
             continue
-        #------------------
+        #---------------
         sections[q["sectionName"]].append(q)
-    #------------------
+    #---------------
     i = render(request,"printingTemplates/examEN.html",{
         "title":exam.Title,
         "duration":exam.Duration_min,
@@ -168,22 +168,30 @@ def download(request:HttpRequest):
         "startAt":exam.StartAt,
     })
     return i
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def createClassRoom(request:HttpRequest):#tested
+    """
+    creating classroom needs the following fields in body:
+        title
+        HideFromSearch
+        paymentAmount
+        PaymentExpireInterval_MIN
+        PaymentAccessMaxCount
+    """
     body = cast(ClassRoomFromFrontend,json.loads(request.body))
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
     return ResponseHelper(clService.createClassRoom(body))
-#------------------
+#---------------
 @require_GET
 @csrf_exempt
 def listclassRooms(request:HttpRequest):#tested
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
     return ResponseHelper(clService.listClassRooms())
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def assignExamToClassRoom(request:HttpRequest):
@@ -193,22 +201,22 @@ def assignExamToClassRoom(request:HttpRequest):
     examID:str|int = body.get("exam_ID",None)
     if classRoomID and isinstance(classRoomID,str) and not classRoomID.isnumeric():
         classRoomID = int(classRoomID)
-    #------------------
+    #---------------
     if examID and isinstance(examID,str) and not examID.isnumeric():
         examID = int(examID)
-    #------------------
+    #---------------
     clService = classRoomService(user)
     currentclassRoom = clService.accessClassRoom(UserPrivileges.SOLVE_EXAM_ALLOWANCE)
     if not currentclassRoom["isSuccess"]:
         return currentclassRoom
-    #------------------
+    #---------------
     examServices = GeneralExamServices(user)
     exam = examServices.validateOwnerShip(cast(int,examID))
     if not exam["isSuccess"]:
         return currentclassRoom
     clService.addExam(currentclassRoom["output"],exam["output"]) #type:ignore
     return ResponseHelper(GOutput({"success":"exam assigend"})) 
-#------------------
+#---------------
 @require_POST
 @csrf_exempt
 def uploadAttachment(request:HttpRequest):
@@ -222,58 +230,58 @@ def uploadAttachment(request:HttpRequest):
         return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
     elif paymentAmount:
         paymentAmount = float(paymentAmount)
-    #------------------
+    #---------------
     if isinstance(PaymentExpireInterval_MIN,str) and not PaymentExpireInterval_MIN.isnumeric():
         return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
     elif PaymentExpireInterval_MIN:
         PaymentExpireInterval_MIN = int(PaymentExpireInterval_MIN)
-    #------------------
+    #---------------
     if isinstance(PaymentAccessMaxCount,str) and not PaymentAccessMaxCount.isnumeric():
         return ResponseHelper(GOutput(error={'paymentAmount':"must be a number"}))
     elif PaymentAccessMaxCount:
         PaymentAccessMaxCount = int(PaymentAccessMaxCount)
-    #------------------
+    #---------------
     
     if not classRoomID:
         return ResponseHelper(GOutput(error={'classRoom':"cannot be null"}))
-    #------------------
+    #---------------
     if classRoomID.isnumeric():
         classRoomID = int(classRoomID)
-    #------------------
+    #---------------
     clService = classRoomService(user)
     currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
     if not currentclassRoom["isSuccess"]:
         return ResponseHelper(currentclassRoom)
-    #------------------
+    #---------------
     if not currentclassRoom["output"]:
         return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
-    #------------------
+    #---------------
     file = request.FILES["uploaded"]
     result = clService.addAttachment(currentclassRoom["output"],cast(InMemoryUploadedFile,file),paymentAmount,PaymentExpireInterval_MIN,PaymentAccessMaxCount) #type:ignore
     if not result["isSuccess"]:
         return ResponseHelper(result)
     return ResponseHelper(GOutput({"success":"attahcment uploaded"}))
-#------------------
+#---------------
 @require_GET
 def listAttachment(request:HttpRequest):
     user = cast(IUserHelper,request.user)
     classRoomID = request.GET.get('classRoom')
     if not classRoomID:
         return ResponseHelper(GOutput(error={'classRoom':"cannot be null"}))
-    #------------------
+    #---------------
     if classRoomID.isnumeric():
         classRoomID = int(classRoomID)
-    #------------------
+    #---------------
     clService = classRoomService(user)
     currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
     if not currentclassRoom["isSuccess"]:
         return ResponseHelper(currentclassRoom)
-    #------------------
+    #---------------
     if not currentclassRoom["output"]:
         return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
     attachments = clService.listAttachments(currentclassRoom["output"])
     return ResponseHelper(attachments)
-#------------------
+#---------------
 @require_POST
 def createCommitte(request:HttpRequest):
     body:dict = json.loads(request.body)
@@ -282,21 +290,21 @@ def createCommitte(request:HttpRequest):
     examID = body.get('examID',None)
     if not users:
         return ResponseHelper(GOutput(error={"users":"cannot be null"}))
-    #------------------
+    #---------------
     if not clRoomID:
         return ResponseHelper(GOutput(error={"clRoomID":"cannot be null"}))
-    #------------------
+    #---------------
     if not examID:
         return ResponseHelper(GOutput(error={"examID":"cannot be null"}))
-    #------------------
+    #---------------
     exam = Exam.objects.filter(ID=examID).first()
     if not exam:
         return ResponseHelper(GOutput(error={"exam":"is not found"}))
-    #------------------
+    #---------------
     clRoom = classRoom.objects.filter(ID=clRoomID).first()
     if not clRoom:
         return ResponseHelper(GOutput(error={"clRoom":"is not found"}),)
-    #------------------
+    #---------------
     try:
         admins = cast(list[IUserHelper],list(User.objects.filter(id__in=users).all()))
         user = request.user
@@ -304,22 +312,22 @@ def createCommitte(request:HttpRequest):
         clService.ManualcreateCommitee(clRoom,exam,admins)
     except Exception as e:
         return ResponseHelper(GOutput(error={"fail":"something went wrong"}))
-#------------------
+#---------------
 @require_POST
 def joinCommitte(request:HttpRequest):
     body:dict = json.loads(request.body)
     committeID = body.get("committe_id",None)
     if not committeID:
         return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
-    #------------------
+    #---------------
     committe = Committe.objects.filter(id=committeID).first()
     if not committe:
         return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
-    #------------------
+    #---------------
     user = cast(IUserHelper,request.user)
     committeService = CommitteServices(user)
     return ResponseHelper(committeService.join(committe))
-#------------------
+#---------------
 @require_POST
 def showExam(request:HttpRequest):
     body:dict = json.loads(request.body)
@@ -329,11 +337,11 @@ def showExam(request:HttpRequest):
     committeOuput = CommitteServices.getCommitte(committeID)
     if not committeOuput["isSuccess"]:
         return ResponseHelper(committeOuput)
-    #------------------
+    #---------------
     committe = cast(Committe,committeOuput["output"])
     committeService = CommitteServices(user)
     return ResponseHelper(committeService.getExamCredentials(committe,passkey))
-#------------------
+#---------------
 @require_POST
 def startCommitte(request:HttpRequest):
     body:dict = json.loads(request.body)
@@ -342,11 +350,11 @@ def startCommitte(request:HttpRequest):
     committeOuput = CommitteServices.getCommitte(committeID)
     if not committeOuput["isSuccess"]:
         return ResponseHelper(committeOuput)
-    #------------------
+    #---------------
     committeService = CommitteServices(user)
     committeService.startCommitte(committeOuput["output"])#type:ignore
     return ResponseHelper(GOutput({"success":"commmitte started"}))
-#------------------
+#---------------
 @require_POST
 def solveExam(request:HttpRequest):
     body:dict = json.loads(request.body)
@@ -355,28 +363,34 @@ def solveExam(request:HttpRequest):
     questionID = body.get("qID",None)
     if not questionID:
         return ResponseHelper(GOutput(error={"qID":"cannot be null"}))
-    #------------------
+    #---------------
     passkey = body.get("passkey",None)
     if not passkey:
         return ResponseHelper(GOutput(error={"passKey":"cannot be null"}))
-    #------------------
+    #---------------
     committeID = body.get("committe_id",None)
     if not committeID:
         return ResponseHelper(GOutput(error={"committeID":"cannot be null"}))
-    #------------------
+    #---------------
     ans = body.get("ans",None)
     if not ans:
         return ResponseHelper(GOutput(error={"ans":"cannot be null"}))
-    #------------------
+    #---------------
     location:Location_Type = cast(Location_Type,body.get("location",None))
     if not location or not location["Xaxis"] or not location["Yaxis"]:
         return ResponseHelper(GOutput(error={"ans":"cannot be null"}))
-    #------------------
+    #---------------
     committeOuput = CommitteServices.getCommitte(committeID)
     committe = committeOuput["output"]
     if not committe:
         return ResponseHelper(GOutput(error={"committe":"not found"}))
-    #------------------
+    #---------------
     committeService.solveExam(questionID,passkey,committe,ans,location)
     return ResponseHelper(GOutput({"success":"commmitte started"}))
-#------------------
+#---------------
+
+@require_GET
+def store(request:HttpRequest,username:str):
+    print(username)
+    return ResponseHelper(GOutput({"success":f"username is {username}"}))
+#---------------

@@ -91,12 +91,12 @@ def userLogin(request:HttpRequest):
                     PreferedLang = lang,
                     User=user
                 )
-            #------------------
-        #------------------
+            #---------------
+        #---------------
         else:
             settings:ProfileSettings = cast(ProfileSettings,user.Settings)
             lang = str(cast(supportedLanguages,settings.PreferedLang).Name)
-        #------------------
+        #---------------
         return ResponseHelper({"success":"successfully done","lang":lang})
     else:
         return ResponseHelper({"login":"username/password is wrong"})

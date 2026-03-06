@@ -10,7 +10,7 @@ class TermService:
             return {"year_id":"cannot be null"}
         terms = user.Terms.filter(Year__ID=year_id,ID__gt=last_id)[:limit].values()
         return list(terms)
-    #------------------
+    #---------------
     def createTerm(self,user,name:Optional[str],year_id:Optional[int|str]):
         if not (name):
             return {"name":"term name cannot be null"}
@@ -24,5 +24,5 @@ class TermService:
         if term:
             return {"success":"Term Created Successfully"}
         return {"fail":"term creation faild"}
-    #------------------
-#------------------CLASS_ENDED#------------------
+    #---------------
+#---------------CLASS_ENDED#---------------

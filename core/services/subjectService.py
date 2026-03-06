@@ -11,7 +11,7 @@ class SubjectService:
             return {"subjects":"required login"}
         subjects = user.Subjects.filter(ID__gt=last_id)[:limit].values()
         return list(subjects)
-    #------------------
+    #---------------
     def createSubject(self,user,year_id:Optional[int|str],term_id:Optional[str|int],name:Optional[str]):
         user = cast(IUserHelper,user)
         if not term_id:
@@ -34,5 +34,5 @@ class SubjectService:
         if not subject:
             return {"fail":"faild no reason specified"}
         return {"success":"subject created"}
-    #------------------
-#------------------CLASS_ENDED#------------------
+    #---------------
+#---------------CLASS_ENDED#---------------

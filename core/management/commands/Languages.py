@@ -9,5 +9,5 @@ class Command(BaseCommand):
             Name=i
         ) for i in ["EN","AR"]]
         supportedLanguages.objects.bulk_create(profileSettings)
-    #------------------
-#------------------
+    #---------------
+#---------------

@@ -15,7 +15,7 @@ class QuestionServices:
     
     def __init__(self,user) -> None:
         self.Owner:IUserHelper = cast(IUserHelper,user)
-    #------------------
+    #---------------
     def _handleChecking(self,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
         if not self.Owner:
             return {"login":"login is required"}
@@ -29,7 +29,7 @@ class QuestionServices:
             return {"lecture_id":"cannot be null"}
         else:
             return {"success":"nothing wrong"}
-    #------------------
+    #---------------
     def showQuestions(self,lecture_id:Optional[int|str],limit:int=100,last_id:int=0)->list[dict[str,Any]]|dict[str,str]:
         if not self.Owner:
             return {"login":"login is required"}
@@ -44,9 +44,9 @@ class QuestionServices:
             if output["isSuccess"] and output["output"]:
                 output["output"][0]["ID"] = q.ID
                 qlist += output["output"]
-        #------------------
+        #---------------
         return qlist
-    #------------------
+    #---------------
     def _validateQuestion(self,editorInput:Optional[QuestionFromFront])->GeneralOutput[Optional[Lecture]]:
         if not editorInput:
             return GOutput(error={"editorInput":"doesn't include data"})
@@ -67,9 +67,9 @@ class QuestionServices:
             return GOutput(error={"editorInput":"editorInput.choices cannot be null but can be empty"})
         if not "answers" in editorInput or len(editorInput["answers"].strip()) == 0 or not isinstance(editorInput["answers"],str):
             return GOutput(error={"editorInput":"editorInput.answers cannot be null or empty and must be string"})
-        #------------------
+        #---------------
         return GOutput(lecture)
-    #------------------
+    #---------------
     def createQuestion(self,editorInput:Optional[QuestionFromFront]):
         validateOutput = self._validateQuestion(editorInput)
         if not validateOutput["isSuccess"]:
@@ -78,7 +78,7 @@ class QuestionServices:
         parseResult:GeneralOutput[QuestionToInsert] = toDBFormParser(editorInput) #type:ignore Validated already from valdiator
         if not parseResult["isSuccess"]:
             return {"faild":parseResult["output"]}
-        #------------------
+        #---------------
         correctResult = parseResult["output"]
         q = self.Owner.Questions.create(
             createdAt=datetime.now(),
@@ -92,7 +92,7 @@ class QuestionServices:
         if not q:
             return {"fail":"creation faild"}
         return {"success":"creation success","createdItems":model_to_dict(q)}
-    #------------------
+    #---------------
     def createQuestions(self,editorInput:Optional[list[QuestionFromFront]]):
         if not editorInput:
             return {"editorInput":"cannot be null"}
@@ -122,11 +122,11 @@ class QuestionServices:
             if isinstance(q["lecture_id"],str) and not q["lecture_id"].isdigit():
                 faildToCreate.append(q)
                 continue
-            #------------------
+            #---------------
             if not int(q["lecture_id"]) in user_lectures:
                 faildToCreate.append(q)
                 continue
-            #------------------
+            #---------------
             questions.append(
                 Question(
                     OwnedBy=self.Owner,
@@ -138,7 +138,7 @@ class QuestionServices:
                     Ease=q["ease"],
                 )
             )
-        #------------------
+        #---------------
         createdItems = self.Owner.Questions.bulk_create(questions)
         if len(faildToCreate) > 0 and len(faildToCreate) < len(parseResults):
             return {"success":"not all you job is create but some of them it you may entered a wrong lecture ids","notCreated":faildToCreate}
@@ -149,5 +149,5 @@ class QuestionServices:
         elif not len(createdItems) == len(questions):
             return {"faild":"something went wrong not all questions created"}
         return {"success":"creation success","createdItems":[model_to_dict(item) for item in createdItems]}
-    #------------------
-#------------------CLASS_ENDED#------------------
+    #---------------
+#---------------CLASS_ENDED#---------------
