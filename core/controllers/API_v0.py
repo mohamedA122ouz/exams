@@ -1,6 +1,6 @@
 import json
 import os
-from typing import cast
+from typing import Optional, cast
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
@@ -328,6 +328,20 @@ def joinCommitte(request:HttpRequest):
     committeService = CommitteServices(user)
     return ResponseHelper(committeService.join(committe))
 #---------------
+@require_GET
+@csrf_exempt
+def showExamOutOfCommit(request:HttpRequest):
+    user = cast(IUserHelper,request.user)
+    examID = request.GET.get("exam_id",None)
+    if not examID:
+        return ResponseHelper({"exam_id":"cannot be null"})
+    examService = GeneralExamServices(user)
+    exam:Optional[Exam] = user.Exams.filter(ID=examID).first()
+    if not exam:
+        return ResponseHelper({"exam":"is not exist"})
+    frontEndData = examService.sendCredentials(exam)
+    return ResponseHelper(frontEndData)
+#------------------
 @require_POST
 def showExam(request:HttpRequest):
     body:dict = json.loads(request.body)
