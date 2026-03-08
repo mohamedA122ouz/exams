@@ -33,5 +33,4 @@ urlpatterns = [
     path('committe/start',API_v0.startCommitte,name="startCommitte"),
     path('committe/exam/show',API_v0.showExam,name="showExam"),
     path('committe/exam/solve',API_v0.solveExam,name="solveExam"),
-    path('store/<slug:username>',API_v0.store,name="store")
 ]

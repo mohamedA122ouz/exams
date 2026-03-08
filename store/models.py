@@ -1,9 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from typing import TYPE_CHECKING
-from django.db.models.fields.related_descriptors import ManyRelatedManager
 from core.models.Exams_models import AttachmentLicence, paymentLocker
 from store.utils.types.RequestStatus import RequestStatus
+
+if TYPE_CHECKING:
+    from django.db.models.fields.related_descriptors import ManyRelatedManager
 
 class Store(models.Model):
     StoreOwner = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="StoreOwner")
@@ -24,11 +26,10 @@ class StoreItems(models.Model):
         Catigories: ManyRelatedManager["Catigories"]
 #---------------
 class StoreAttachments(models.Model):
-    # ATTACHMENT FIELDS
     ID = models.AutoField(primary_key=True)
     name = models.TextField(null=False,blank=False,default='NO_NAME')
     Attachments = models.FileField(upload_to="uploads/store/",null=True,default=None)
-    attachmentLicence = models.OneToOneField(AttachmentLicence,on_delete=models.CASCADE,related_name='classRoomAttachment')
+    attachmentLicence = models.OneToOneField(AttachmentLicence,on_delete=models.CASCADE,related_name='StoreAttachments')
     if TYPE_CHECKING:
         StoreItems:models.Manager[StoreItems]
 #---------------
@@ -58,7 +59,7 @@ class Requests(models.Model):
 #---------------
 class storePayment(models.Model):
     PaidRequest = models.ForeignKey(Requests,related_name="Payments",on_delete=models.CASCADE,null=False)
-    PaidUser = models.ForeignKey(User,related_name="paidUser-",on_delete=models.CASCADE,null=False)
+    PaidUser = models.ForeignKey(User,related_name="paidUser",on_delete=models.CASCADE,null=False)
     Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     TransactionType = models.IntegerField(choices=RequestStatus.choices())
     locker = models.ForeignKey(paymentLocker,related_name="storePayment",on_delete=models.CASCADE,null=False)

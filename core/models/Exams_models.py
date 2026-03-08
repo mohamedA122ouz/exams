@@ -8,9 +8,11 @@ from core.services.types.questionType import QuestionEase, QuestionType, Scoring
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
 
+
 if TYPE_CHECKING:
     from store.models import storePayment
     from django.db.models.fields.related_descriptors import ManyRelatedManager
+    from store.models import StoreItems
 
 
 
@@ -264,6 +266,7 @@ class AttachmentLicence(models.Model):
     RequireSecurity = models.BooleanField(default=False)
     if TYPE_CHECKING:
         classRoomAttachment:ClassRoomAttachment
+        StoreItems:"StoreItems"
 #---------------
 class dependenciesRepo(models.Model): 
     # This table must not connect with other tables

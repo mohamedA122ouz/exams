@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "core",
     'store',
     "corsheaders",
+    "rest_framework"
 ]
 
 

@@ -8,7 +8,6 @@ from django.contrib.auth.models import User
 from pydantic import TypeAdapter
 from core.models.Exams_models import Year, Term, classRoom, Subject
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
-from .allTypes.userTypes import userType
 from .types import User_type
 from rest_framework.serializers import ListSerializer
 
@@ -40,6 +39,8 @@ class APIv0Tests(TransactionTestCase):
     def setUp(self):
         """Runs before every test: ensures login and fresh client."""
         self.client = Client()
+        if not self.user:
+            raise ValueError("cannot have user not logged in")
         self.client.force_login(self.user)
     #---------------
     # --- ORDERED STEP 1: YEAR ---

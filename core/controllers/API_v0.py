@@ -388,9 +388,3 @@ def solveExam(request:HttpRequest):
     committeService.solveExam(questionID,passkey,committe,ans,location)
     return ResponseHelper(GOutput({"success":"commmitte started"}))
 #---------------
-
-@require_GET
-def store(request:HttpRequest,username:str):
-    print(username)
-    return ResponseHelper(GOutput({"success":f"username is {username}"}))
-#---------------
