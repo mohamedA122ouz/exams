@@ -6,6 +6,7 @@ from core.services.types.questionType import ShareWithEnum
 class Location_Type(TypedDict):
     Xaxis:float
     Yaxis:float
+    buildingArea:float
 #---------------
 class ExamSettings(TypedDict):
     PassKey:Optional[str]

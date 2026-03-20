@@ -22,7 +22,9 @@
             "request": "launch",
             "args": [
                 "test",
-                "--failfast"
+                "--failfast",
+                "-v",
+                "2"
             ],
             "django": true,
             "autoStartBrowser": false,

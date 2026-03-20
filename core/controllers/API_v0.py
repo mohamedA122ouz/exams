@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Optional, cast
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
@@ -9,21 +8,21 @@ from core.models.Exams_models import Committe, Exam, classRoom
 from core.services.classRoomService import classRoomService
 from core.services.committeService import CommitteServices
 from core.services.questionService import QuestionServices
-from core.services.lecutreService import LectureService
+from core.services.lectureService import LectureService
 from core.services.subjectService import SubjectService
 from core.services.termService import TermService
 from core.services.types.examTypes import ExamSettings, Location_Type, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
-from core.services.utils.examParser import autoGeneratorParser
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
-from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionToFront
+from core.services.types.questionType import QuestionFromFront, QuestionToFront
 from core.services.utils.priviliages import UserPrivileges
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
+from rest_framework.decorators import api_view
 
 #level one
 @require_GET
@@ -92,11 +91,16 @@ def createQuestion(request:HttpRequest)->JsonResponse:
     editor:QuestionFromFront = json.loads(request.body)
     return ResponseHelper(QuestionServices(request.user).createQuestion(editor))
 #---------------
+@api_view(['POST'])
+@csrf_exempt
+def createQuestions(request:HttpRequest)->JsonResponse:
+    editor:list[QuestionFromFront] = json.loads(request.body)
+    return ResponseHelper(QuestionServices(request.user).createQuestions(editor))
+#---------------
 @require_POST
 @csrf_exempt
 def createExam(request:HttpRequest)->JsonResponse:
     body:examRequest = cast(examRequest,json.loads(request.body))
-    ee = GeneralExamServices(request.user)
     settings = cast(ExamSettings,{})
     if not "title" in body:
         return ResponseHelper({"title":"cannot be null"})
@@ -107,8 +111,8 @@ def createExam(request:HttpRequest)->JsonResponse:
     if not "settings" in body:
         return ResponseHelper({"settings":"cannot be null"})
     settings:ExamSettings = cast(ExamSettings,body["settings"])
-    
-    output = ee.createExamHybrid(body["title"],body["subject_id"],body["questions"],settings)
+    GES = GeneralExamServices(request.user)
+    output = GES.createExamHybrid(body["title"],body["subject_id"],body["questions"],settings)
     if output["isSuccess"]:
         return ResponseHelper({"success":"exam created successfully"})
     return ResponseHelper(output)
@@ -334,11 +338,11 @@ def showExamOutOfCommit(request:HttpRequest):
     user = cast(IUserHelper,request.user)
     examID = request.GET.get("exam_id",None)
     if not examID:
-        return ResponseHelper({"exam_id":"cannot be null"})
+        return ResponseHelper(GOutput(error={"exam_id":"cannot be null"}))
     examService = GeneralExamServices(user)
     exam:Optional[Exam] = user.Exams.filter(ID=examID).first()
     if not exam:
-        return ResponseHelper({"exam":"is not exist"})
+        return ResponseHelper(GOutput(error={"exam":"is not found"}))
     frontEndData = examService.sendCredentials(exam)
     return ResponseHelper(frontEndData)
 #------------------

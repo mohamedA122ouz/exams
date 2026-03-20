@@ -1,7 +1,13 @@
-from typing import Any, Generic, Literal, Optional, Protocol, TypeVar, TypedDict
+from typing import TYPE_CHECKING, Any, Generic, Literal, Optional, Protocol, TypeVar, TypedDict, cast
 from enum import IntEnum
 
+from pdfkit import source
 from core.services.types.attachmentType import Attachments
+
+
+
+
+    
 
 
 class ScoringMode(IntEnum):
@@ -16,7 +22,7 @@ class QuestionType(IntEnum):
     MCQ_ONE_ANS = 0
     MCQ_MORE_ANS = 1
     WRITTEN_QUETION = 2
-    COMPLEX = 3
+    COMPLETE = 3
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
         return [(e.value, e.name) for e in cls]
@@ -51,7 +57,9 @@ class QuestionFromFront(TypedDict):
     lecture_id:int
     sectionName:Optional[str]
     degree:Optional[float]
+    scoringMode:Optional[ScoringMode]
 #---------------
+
 class QuestionToFront(TypedDict):
     """Question Came from frontend and need to convert for database insertion or quesiton need to be sent to frontend"""
     answers:Optional[str]

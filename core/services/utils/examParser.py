@@ -1,13 +1,16 @@
 import json
-from typing import Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from django.forms import model_to_dict
-from core.models.Exams_models import Question
+from rest_framework import serializers
+
 from core.services.types.attachmentType import Attachments
+from core.services.types.questionType_serializer import QuestionFromFront_Serializer
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
 from ..types.questionType import AutoGenExamSetting, GeneralOutput, QuestionFromFront, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, QuestionToInsert
 import random
+from core.models.Exams_models import Question
 
 
 def toFrontendForm(examText:str)->GeneralOutput[Optional[list[QuestionFromFront]]]:
@@ -253,13 +256,13 @@ def toDBFormParser(jsonItem:QuestionFromFront)->GeneralOutput[Optional[QuestionT
     jsonItem["question"] = jsonItem["question"].replace("@",_atSign)
     jsonItem["question"] = jsonItem["question"].replace("~",_tildaSign)
     item:QuestionToInsert = cast(QuestionToInsert,{})
-    if jsonItem["attachments"]:
+    if "attachments" in jsonItem and jsonItem["attachments"]:
         for i,attachment in enumerate(jsonItem["attachments"]):
             rp = f"~IMAGE@{attachment['link']}" if attachment["type"] == 'img'else f'~{attachment["type"].upper()}@{attachment["link"]}'
             jsonItem["question"] = jsonItem["question"].replace(f'${i}',rp)
         #---------------
     #---------------
-    if jsonItem["choices"]:
+    if "choices" in jsonItem and jsonItem["choices"]:
         jsonItem["question"] += "".join([f'~CHOICE@{choice}' for choice in jsonItem["choices"]])
     #---------------
     jsonItem["question"] = jsonItem["question"].replace(_dollar,"$")

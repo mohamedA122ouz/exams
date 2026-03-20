@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-from typing import Any, Optional, Union, cast
+import json
+from typing import Any, Literal, Optional, Tuple, Union, cast
 from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
 from core.services.classRoomService import classRoomService
 from core.services.types.submitReason import SubmitReason
@@ -97,10 +98,11 @@ class GeneralExamServices:
         exam.PreventOtherTabs = settings["PreventOtherTabs"]
         exam.QuestionByQuestion = settings["QuestionByQuestion"]
         if settings["Locations"]:
-            exam.Locations.create(Xaxis=settings["Locations"]["Xaxis"],Yaxis=settings["Locations"]["Yaxis"])
+            exam.Locations.create(Xaxis=settings["Locations"]["Xaxis"],Yaxis=settings["Locations"]["Yaxis"],buildingArea=settings["Locations"]["buildingArea"])
         exam.save()
     #---------------
-    def _manualPickQuestion(self,title:str,subject_id:int,Question_ids:list[int],settings:ExamSettings,exam:Optional[Exam] = None)->GeneralOutput[Optional[Exam]]:
+    @transaction.atomic
+    def _manualPickQuestion(self,title:str,subject_id:int,Question_ids:list[int],settings:ExamSettings,exam:Optional[Exam] = None,sectionNames:dict[int,Tuple[str,float]]={},counter_REF:dict[Literal["current"],int]={"current":0})->GeneralOutput[Optional[Exam]]:
         if not title:
             return GOutput(error={"title":"cannot be null"})
         if not subject_id: 
@@ -132,8 +134,8 @@ class GeneralExamServices:
             isAlreadyCreated = True
         #---------------
         exam_questions = [
-            Exam_Questions(Exam=exam, Question=q, Order=i+1)
-            for i, q in enumerate(questions)
+            Exam_Questions(Exam=exam, Question=q, Order=(counter_REF.update({"current":counter_REF["current"]+1}) or counter_REF["current"]) ,sectionName=sectionNames[q.ID][0],degree=sectionNames[q.ID][1])
+            for q in questions
         ]
         questions.update(InExamCounter=F("InExamCounter")+1)
         createdObjects = Exam_Questions.objects.bulk_create(exam_questions)
@@ -152,7 +154,8 @@ class GeneralExamServices:
         #---------------
         return {"classroom_id":"user don't have classroom with the given ID"}
     #---------------
-    def _createExam(self,input:list[QuestionFromFront],title:str,subject_id:int,settings:ExamSettings,exam:Optional[Exam]=None)->GeneralOutput[Optional[Exam]]:
+    @transaction.atomic
+    def _createExam(self,input:list[QuestionFromFront],title:str,subject_id:int,settings:ExamSettings,exam:Optional[Exam]=None,counter_REF:dict[Literal["current"],int]={"current":0})->GeneralOutput[Optional[Exam]]:
         """Create full exam from scratch"""
         createdAt = datetime.now()
         if not title:
@@ -213,7 +216,7 @@ class GeneralExamServices:
             isAlreadyCreated = True
         #---------------
         exam_questions = [
-            Exam_Questions(Exam=exam, Question=q, Order=i+1,sectionName=sectionsArr[i],degree=input[i]["degree"])
+            Exam_Questions(Exam=exam, Question=q, Order=(counter_REF.update({"current":counter_REF["current"]+1}) or counter_REF["current"]),sectionName=sectionsArr[i],degree=input[i]["degree"])
             for i, q in enumerate(createdQs)
         ]
         Exam_Questions.objects.bulk_create(exam_questions)
@@ -224,16 +227,36 @@ class GeneralExamServices:
             return GOutput(exam)
         return GOutput(error={"faild":"something not created or something error"})
     #---------------
-    def createExamHybrid(self,title:str,subject_id:int,input: list[QuestionFromFront]|list[ExamAutoGenerator]|list[int],examSettings:ExamSettings)->GeneralOutput:
+    @transaction.atomic
+    def createExamHybrid(self,title:str,subject_id:int,input: list[QuestionFromFront]|list[ExamAutoGenerator]|list[list[Union[str,int,float]]],examSettings:ExamSettings)->GeneralOutput:
         manualPick:list[int] = [] # already exist question only choosing them manually
+        manualPickDegree_SectionName:dict[int,Tuple[str,float]] = {}
         autoPick:list[ExamAutoGenerator] = [] # already exist question only choosing them automatically
         manualQuestions:list[QuestionFromFront] = []
         mainExam:Optional[Exam] = None
+        counter_REF:dict[Literal["current"],int] = {"current":0}
         
         # clustering exam questions from frontend
         for q in input:
-            if isinstance(q,int):
-                manualPick.append(q)
+            if isinstance(q,list): # it should be like [<int:ID>,<str:SectionName>,<float:degree>]
+                if len(q) == 3:
+                    if isinstance(q[0],int):
+                        manualPick.append(q[0])
+                    #---------------
+                    else:
+                        return GOutput(error={"input":"wrong tuple order in question Selection"})
+                    #---------------    
+                    if isinstance(q[1],str) and isinstance(q[2],float):
+                        manualPickDegree_SectionName[q[0]] = (q[1],q[2])
+                    #---------------
+                    else:
+                        return GOutput(error={"input":"wrong tuple order in question Selection"})
+                    #---------------    
+                #---------------
+                else:
+                    return GOutput(error={"input":"wrong selection length"})
+                #---------------
+            #---------------
             elif "questions" in q and "generatorSettings" in q:
                 autoPick.append(q)
             #---------------
@@ -256,16 +279,16 @@ class GeneralExamServices:
                 )
             #---------------
             exam_questions = [
-                Exam_Questions(Exam=mainExam, Question=q, Order=i+1)
-                for i, q in enumerate(questions)
+                Exam_Questions(Exam=mainExam, Question=q, Order=(counter_REF.update({"current":counter_REF["current"]+1}) or counter_REF["current"]))
+                for q in questions
             ]
             Exam_Questions.objects.bulk_create(exam_questions)
         #---------------
-        examSelectorOutput = self._manualPickQuestion(title,subject_id,manualPick,examSettings,mainExam)
+        examSelectorOutput = self._manualPickQuestion(title,subject_id,manualPick,examSettings,mainExam,manualPickDegree_SectionName,counter_REF)
         if examSelectorOutput["isSuccess"] and not mainExam:
             mainExam = examSelectorOutput["output"] # an error for sure
         # #---------------
-        output = self._createExam(manualQuestions,title,subject_id,examSettings,mainExam)
+        output = self._createExam(manualQuestions,title,subject_id,examSettings,mainExam,counter_REF)
         if output["isSuccess"] and not mainExam:
             mainExam = output["output"]
         if not mainExam:
@@ -341,23 +364,37 @@ class GeneralExamServices:
                 return GOutput(error={"exam":"exam doesn't include this question"})
             #---------------
             FULL_MARK = ExamQuestion.degree
-            if soln.Question.Type == QuestionType.COMPLEX or soln.Question.Type == QuestionType.WRITTEN_QUETION:
+            if soln.Question.Type == QuestionType.WRITTEN_QUETION:
                 WAITIN_AI_SOLN.append(soln)
+                continue
             #---------------
-            MODLE_ANS:list[str] = sorted(cast(str,soln.Question.Ans).split(','))
-            STUDENT_ANS:list[str] = sorted(cast(str,soln.Content).split(','))
+            Model_ANS:list[str] = []
+            Student_ANS:list[str] = []
+            if soln.Question.Type == QuestionType.COMPLETE:
+                try:
+                    Student_ANS:list[str] = json.loads(soln.Content)
+                    Model_ANS:list[str] = json.loads(soln.Question.Ans)
+                except Exception as e:
+                    print(str(e))
+                    continue
+                #---------------
+            #---------------
+            elif soln.Question.Type == QuestionType.MCQ_MORE_ANS:
+                Model_ANS:list[str] = sorted(cast(str,soln.Question.Ans).split(','))
+                Student_ANS:list[str] = sorted(cast(str,soln.Content).split(','))
+            #---------------
             correctAnsCount = 0
-            for i,ans in enumerate(MODLE_ANS):
-                if ans == STUDENT_ANS[i]:
+            for i,ans in enumerate(Model_ANS):
+                if ans == Student_ANS[i]:
                     correctAnsCount += 1
                 #---------------
             #---------------
-            PERCENTAGE =  correctAnsCount/len(MODLE_ANS)
+            PERCENTAGE =  correctAnsCount/len(Model_ANS)
             if soln.Question.scoringMode == ScoringMode.MULTI_ANS_ONE_ENOUGH:
                 soln.Degree = FULL_MARK
                 studentSheet.TotalMark += FULL_MARK
             #---------------
-            elif soln.Question.scoringMode == ScoringMode.MULTI_ANS_PARTITION:
+            elif soln.Question.scoringMode == ScoringMode.MULTI_ANS_PARTITION or (soln.Question.Type == QuestionType.COMPLETE and soln.Question.scoringMode == ScoringMode.DEFAULT):
                 soln.Degree = round(PERCENTAGE * FULL_MARK,3)
                 studentSheet.TotalMark += round(PERCENTAGE * FULL_MARK,3)
             #---------------
@@ -366,10 +403,11 @@ class GeneralExamServices:
             #---------------
         #---------------
         Soln.objects.bulk_update(SOLNS,'Degree')
-        self.useAI(WAITIN_AI_SOLN)
+        self.useAI(WAITIN_AI_SOLN) 
         studentSheet.save()
     #---------------
     def useAI(self,soln:list[Soln]):
+        # this will register a task in the background
         ... #we will connect this when needed to the ai to make the written questions corrected
     #---------------
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:

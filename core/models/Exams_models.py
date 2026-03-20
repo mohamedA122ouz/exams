@@ -53,7 +53,7 @@ class Lecture(models.Model):
     Questions : models.Manager["Question"]
 #---------------
 class Question(models.Model):
-    createdAt = models.DateField(null=False)
+    createdAt = models.DateField(null=False,auto_now=True)
     ID = models.AutoField(primary_key=True)
     Text_Url = models.CharField(max_length=400)
     Type = models.IntegerField(choices=QuestionType.choices(), default=QuestionType.MCQ_ONE_ANS)

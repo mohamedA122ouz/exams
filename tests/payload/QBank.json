@@ -1,0 +1,456 @@
+[
+    {
+        "question": "FAKE QUESTION_1 MCQ_ONE_ANS EASE = 2 DEGREE = 10 ANS = 'choice2'!",
+        "questionType": 0,
+        "answers": "2",
+        "ease": 2,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_2 MCQ_ONE_ANS EASE = 1 DEGREE = 5 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_3 MCQ_ONE_ANS EASE = 0 DEGREE = 2.5 ANS = 'choice0'!",
+        "questionType": 0,
+        "answers": "0",
+        "ease": 0,
+        "degree": 2.5,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_4 MCQ_MORE_ANS EASE = 2 DEGREE = 7 ANS = 'choice0','choice2'!",
+        "questionType": 1,
+        "answers": "0,2",
+        "ease": 2,
+        "degree": 21,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_5 MCQ_MORE_ANS EASE = 1 DEGREE = 14 ANS = 'choice1','choice0'!",
+        "questionType": 1,
+        "answers": "1,0",
+        "ease": 1,
+        "degree": 14,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_6 MCQ_MORE_ANS EASE = 0 DEGREE = 7 ANS = 'choice1','choice0','choice2'!",
+        "questionType": 1,
+        "answers": "1,0,2",
+        "ease": 1,
+        "degree": 7,
+        "lecture_id": 1,
+        "choices": [
+            "choice0",
+            "choice1",
+            "choice2"
+        ]
+    },
+    {
+        "question": "FAKE QUESTION_7 WRITTEN_QUETION EASE = 0 DEGREE = 4 ANS = 'TEST_ANSWER'!",
+        "questionType": 2,
+        "answers": "TEST_ANSWER",
+        "ease": 2,
+        "degree": 4,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_8 WRITTEN_QUETION EASE = 0 DEGREE = 9 ANS = ''!",
+        "questionType": 2,
+        "answers": "",
+        "ease": 0,
+        "degree": 9,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_9 WRITTEN_QUETION EASE = 0 DEGREE = 2 QUESTION = .... , .... , .... ANS = 'TEST1','TEST2','TEST3'!",
+        "questionType": 3,
+        "answers": "['TEST1','TEST2','TEST3']",
+        "ease": 0,
+        "degree": 2,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_10 MCQ_ONE_ANS EASE = 2 DEGREE = 10 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 2,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_11 MCQ_ONE_ANS EASE = 1 DEGREE = 5 ANS = 'choice0'!",
+        "questionType": 0,
+        "answers": "0",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_12 MCQ_ONE_ANS EASE = 0 DEGREE = 2.5 ANS = 'choice2'!",
+        "questionType": 0,
+        "answers": "2",
+        "ease": 0,
+        "degree": 2.5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_13 MCQ_MORE_ANS EASE = 2 DEGREE = 21 ANS = 'choice1','choice2'!",
+        "questionType": 1,
+        "answers": "1,2",
+        "ease": 2,
+        "degree": 21,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_14 MCQ_MORE_ANS EASE = 1 DEGREE = 14 ANS = 'choice0','choice2'!",
+        "questionType": 1,
+        "answers": "0,2",
+        "ease": 1,
+        "degree": 14,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_15 MCQ_MORE_ANS EASE = 0 DEGREE = 7 ANS = 'choice0','choice1'!",
+        "questionType": 1,
+        "answers": "0,1",
+        "ease": 0,
+        "degree": 7,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_16 WRITTEN_QUETION EASE = 2 DEGREE = 5 ANS = 'SAMPLE_ANSWER'!",
+        "questionType": 2,
+        "answers": "SAMPLE_ANSWER",
+        "ease": 2,
+        "degree": 5,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_17 WRITTEN_QUETION EASE = 1 DEGREE = 8 ANS = 'VERIFIED'!",
+        "questionType": 2,
+        "answers": "VERIFIED",
+        "ease": 1,
+        "degree": 8,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_18 FILL_BLANK EASE = 0 DEGREE = 3 QUESTION = .... , .... ANS = 'VAL1','VAL2'!",
+        "questionType": 3,
+        "answers": "['VAL1','VAL2']",
+        "ease": 0,
+        "degree": 3,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_19 MCQ_ONE_ANS EASE = 2 DEGREE = 10 ANS = 'choice0'!",
+        "questionType": 0,
+        "answers": "0",
+        "ease": 2,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_20 MCQ_ONE_ANS EASE = 1 DEGREE = 5 ANS = 'choice2'!",
+        "questionType": 0,
+        "answers": "2",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_21 MCQ_MORE_ANS EASE = 2 DEGREE = 21 ANS = 'choice0','choice1','choice2'!",
+        "questionType": 1,
+        "answers": "0,1,2",
+        "ease": 2,
+        "degree": 21,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_22 WRITTEN_QUETION EASE = 0 DEGREE = 15 ANS = 'LONG_ANSWER'!",
+        "questionType": 2,
+        "answers": "LONG_ANSWER",
+        "ease": 0,
+        "degree": 15,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_23 FILL_BLANK EASE = 1 DEGREE = 6 QUESTION = .... ANS = 'SINGLE'!",
+        "questionType": 3,
+        "answers": "['SINGLE']",
+        "ease": 1,
+        "degree": 6,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_24 MCQ_ONE_ANS EASE = 0 DEGREE = 2.5 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 0,
+        "degree": 2.5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_25 MCQ_MORE_ANS EASE = 1 DEGREE = 14 ANS = 'choice2','choice0'!",
+        "questionType": 1,
+        "answers": "2,0",
+        "ease": 1,
+        "degree": 14,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_26 WRITTEN_QUETION EASE = 2 DEGREE = 12 ANS = 'DATA_ENTRY'!",
+        "questionType": 2,
+        "answers": "DATA_ENTRY",
+        "ease": 2,
+        "degree": 12,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_27 FILL_BLANK EASE = 0 DEGREE = 4 QUESTION = .... , .... , .... ANS = 'A','B','C'!",
+        "questionType": 3,
+        "answers": "['A','B','C']",
+        "ease": 0,
+        "degree": 4,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_28 MCQ_ONE_ANS EASE = 1 DEGREE = 5 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_29 MCQ_MORE_ANS EASE = 0 DEGREE = 7 ANS = 'choice1','choice2'!",
+        "questionType": 1,
+        "answers": "1,2",
+        "ease": 0,
+        "degree": 7,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_30 WRITTEN_QUETION EASE = 1 DEGREE = 10 ANS = 'FINAL_CHECK'!",
+        "questionType": 2,
+        "answers": "FINAL_CHECK",
+        "ease": 1,
+        "degree": 10,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_31 MCQ_ONE_ANS EASE = 2 DEGREE = 10 ANS = 'choice2'!",
+        "questionType": 0,
+        "answers": "2",
+        "ease": 2,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_32 COMPLETE EASE = 1 DEGREE = 4 QUESTION = The capital of Egypt is .... ANS = 'Cairo'!",
+        "questionType": 3,
+        "answers": "['Cairo']",
+        "ease": 1,
+        "degree": 4,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_33 MCQ_ONE_ANS EASE = 0 DEGREE = 5 ANS = 'choice0'!",
+        "questionType": 0,
+        "answers": "0",
+        "ease": 0,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_34 MCQ_MORE_ANS EASE = 2 DEGREE = 15 ANS = 'choice1','choice2'!",
+        "questionType": 1,
+        "answers": "1,2",
+        "ease": 2,
+        "degree": 15,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_35 WRITTEN_QUETION EASE = 1 DEGREE = 8 ANS = 'User feedback'!",
+        "questionType": 2,
+        "answers": "User feedback",
+        "ease": 1,
+        "degree": 8,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_36 COMPLETE EASE = 0 DEGREE = 6 QUESTION = Django is based on .... and .... ANS = 'Python','MVT'!",
+        "questionType": 3,
+        "answers": "['Python','MVT']",
+        "ease": 0,
+        "degree": 6,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_37 MCQ_ONE_ANS EASE = 1 DEGREE = 10 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 1,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_38 MCQ_MORE_ANS EASE = 0 DEGREE = 12 ANS = 'choice0','choice1'!",
+        "questionType": 1,
+        "answers": "0,1",
+        "ease": 0,
+        "degree": 12,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_39 WRITTEN_QUETION EASE = 2 DEGREE = 20 ANS = 'Documentation'!",
+        "questionType": 2,
+        "answers": "Documentation",
+        "ease": 2,
+        "degree": 20,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_40 COMPLETE EASE = 1 DEGREE = 5 QUESTION = First step is .... then .... then .... ANS = 'Plan','Code','Test'!",
+        "questionType": 3,
+        "answers": "['Plan','Code','Test']",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_41 MCQ_ONE_ANS EASE = 2 DEGREE = 5 ANS = 'choice2'!",
+        "questionType": 0,
+        "answers": "2",
+        "ease": 2,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_42 MCQ_MORE_ANS EASE = 1 DEGREE = 10 ANS = 'choice2','choice0'!",
+        "questionType": 1,
+        "answers": "2,0",
+        "ease": 1,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_43 WRITTEN_QUETION EASE = 0 DEGREE = 15 ANS = 'Complex Logic'!",
+        "questionType": 2,
+        "answers": "Complex Logic",
+        "ease": 0,
+        "degree": 15,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_44 COMPLETE EASE = 2 DEGREE = 3 QUESTION = Python is .... ANS = 'Dynamic'!",
+        "questionType": 3,
+        "answers": "['Dynamic']",
+        "ease": 2,
+        "degree": 3,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_45 MCQ_ONE_ANS EASE = 1 DEGREE = 5 ANS = 'choice0'!",
+        "questionType": 0,
+        "answers": "0",
+        "ease": 1,
+        "degree": 5,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_46 MCQ_MORE_ANS EASE = 2 DEGREE = 14 ANS = 'choice1','choice0'!",
+        "questionType": 1,
+        "answers": "1,0",
+        "ease": 2,
+        "degree": 14,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_47 WRITTEN_QUETION EASE = 1 DEGREE = 10 ANS = 'Stability'!",
+        "questionType": 2,
+        "answers": "Stability",
+        "ease": 1,
+        "degree": 10,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_48 COMPLETE EASE = 0 DEGREE = 7 QUESTION = Logic .... and .... ANS = 'True','False'!",
+        "questionType": 3,
+        "answers": "['True','False']",
+        "ease": 0,
+        "degree": 7,
+        "lecture_id": 1
+    },
+    {
+        "question": "FAKE QUESTION_49 MCQ_ONE_ANS EASE = 2 DEGREE = 10 ANS = 'choice1'!",
+        "questionType": 0,
+        "answers": "1",
+        "ease": 2,
+        "degree": 10,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    },
+    {
+        "question": "FAKE QUESTION_50 MCQ_MORE_ANS EASE = 0 DEGREE = 21 ANS = 'choice0','choice1','choice2'!",
+        "questionType": 1,
+        "answers": "0,1,2",
+        "ease": 0,
+        "degree": 21,
+        "lecture_id": 1,
+        "choices": ["choice0", "choice1", "choice2"]
+    }
+]

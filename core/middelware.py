@@ -15,8 +15,8 @@ class LoginRequiredMiddleware:
         self.get_response = get_response
         # URLs you want to exclude from authentication check:
         self.exclude_paths = [
-            reverse('API_v0_login'),
-            reverse('API_v0_createUser')
+            reverse('v0_login'),
+            reverse('v0_createUser')
         ]
     #---------------
 
@@ -26,7 +26,7 @@ class LoginRequiredMiddleware:
             if not request.user.is_authenticated and request.path not in self.exclude_paths:
                 if request.path.startswith("/api"):
                     return JsonResponse({"login":"is required"},status=403) 
-                return redirect('API_v0_login')
+                return redirect('v0_login')
             # Otherwise, continue normally
             response = self.get_response(request)
             return response

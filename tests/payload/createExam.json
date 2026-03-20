@@ -1,0 +1,62 @@
+{
+    "questions": [
+        {
+            "sectionName": "MCQ",
+            "question": "Which item costs more than #$100?",
+            "questionType": 0,
+            "answers": "2",
+            "ease": 2,
+            "degree":10,
+            "lecture_id":1,
+            "choices": [
+                "Iron",
+                "Gold",
+                "Silver"
+            ]
+        },
+        {
+            "generatorSettings": {
+                "lecture_id":1,
+                "subjectID": 1,
+                "yearID": 1,
+                "termID": 1,
+                "randomization": true
+            },
+            "questions": [
+                {
+                    "questionType": 0,
+                    "count": 5,
+                    "ease":0
+                },
+                {
+                    "questionType": 0,
+                    "count": 5,
+                    "ease":1
+                },
+                {
+                    "questionType": 0,
+                    "count": 5,
+                    "ease":2
+                }
+            ]
+        }
+    ],
+    "settings": {
+        "Duration_min": 60,
+        "PassKey":"testKey@12345",
+        "AllowDownload":false,
+        "AutoCorrect":true,
+        "StartAt": "2026-12-09T12:00:00",
+        "EndAt": "2026-12-09T13:00:00",
+        "PreventOtherTabs":true,
+        "QuestionByQuestion":false,
+        "Locations":{
+            "Xaxis":152,
+            "Yaxis":66,
+            "buildingArea":70
+        },
+        "ShareWith":2
+    },
+    "title":"test Exam",
+    "subject_id":1
+}

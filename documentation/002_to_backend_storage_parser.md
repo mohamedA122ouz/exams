@@ -20,7 +20,7 @@
 
 
 **Function:** `toFrontendFormType(examText: str) -> list[AnsParserOutput]`  
-**Author:** Mohamed  
+**Author:** Mohamed Azouz
 **Version:** 2.0  
 **Purpose:** Converts a text-based exam specification into a structured list of questions, including multiple-choice (single or multi-answer) and written questions, with HTML-ready rendering and answer mapping.  
 

@@ -126,7 +126,7 @@ choices?: string[] | null
 | MCQ_ONE_ANS   | ✅ Yes            |
 | MCQ_MORE_ANS  | ✅ Yes            |
 | WRITTEN       | ❌ No (`null`)    |
-| COMPLEX       | ❌ No (`null`)    |
+| COMPLETE      | ❌ No (`null`)    |
 
 Example:
 
@@ -164,7 +164,7 @@ Example:
 
 → Correct answers: `choices[0]`, `choices[2]`, `choices[3]`
 
-#### Written / Complex Questions
+#### Written / Complete Questions
 
 * The **expected correct text**
 

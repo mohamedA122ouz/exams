@@ -5,6 +5,7 @@ from django.forms import model_to_dict
 
 from core.models.Exams_models import  Lecture, Question
 from core.services.types.questionType import QuestionEase, QuestionToFront, QuestionToInsert, GeneralOutput
+from core.services.types.questionType_serializer import QuestionFromFront_Serializer
 from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFormParser, toFrontendFormHelper
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
@@ -15,20 +16,6 @@ class QuestionServices:
     
     def __init__(self,user) -> None:
         self.Owner:IUserHelper = cast(IUserHelper,user)
-    #---------------
-    def _handleChecking(self,text_url:Optional[str],type:Optional[str|int],ans:Optional[str],lecture_id:Optional[str])->dict[str,str]:
-        if not self.Owner:
-            return {"login":"login is required"}
-        if not text_url:
-            return {"text_url":"cannot be null"}
-        if not type:
-            return {"type":"cannot be null"}
-        if not ans:
-            return {"ans":"cannot be null"}
-        if not lecture_id:
-            return {"lecture_id":"cannot be null"}
-        else:
-            return {"success":"nothing wrong"}
     #---------------
     def showQuestions(self,lecture_id:Optional[int|str],limit:int=100,last_id:int=0)->list[dict[str,Any]]|dict[str,str]:
         if not self.Owner:
@@ -93,61 +80,24 @@ class QuestionServices:
             return {"fail":"creation faild"}
         return {"success":"creation success","createdItems":model_to_dict(q)}
     #---------------
-    def createQuestions(self,editorInput:Optional[list[QuestionFromFront]]):
-        if not editorInput:
-            return {"editorInput":"cannot be null"}
-        if len(editorInput) == 0:
-            return {"editorInput":"cannot be empty"}
-        checkingResult = self._handleChecking("placeHolderText",editorInput[0]["questionType"],editorInput[0]["answers"],"1")
-        if not "success" in checkingResult:
-            return checkingResult
-        if "question" in editorInput:
-            return {"editorInput":"editorInput.question cannot be null"}
-        if "questionType" in editorInput:
-            return {"editorInput":"editorInput.questionType cannot be null"}
-        
-        faildToCreate = []
-        parseResults: list[QuestionToInsert] = [
-            result["output"]
-            for i in editorInput
-            if (result := toDBFormParser(i))["isSuccess"]
-        ] #type:ignore if success then the output is always not None
-        
-        questions: list[Question] = []
-        user_lectures = set(
-            int(lec)
-            for lec in self.Owner.Lectures.values_list("ID", flat=True)
-        )
-        for q in parseResults:
-            if isinstance(q["lecture_id"],str) and not q["lecture_id"].isdigit():
-                faildToCreate.append(q)
-                continue
+    def createQuestions(self,editorInput:Optional[list[QuestionFromFront]])->GeneralOutput:
+        try:
+            if not editorInput:
+                return GOutput(error={"editorInput":"cannot be null"})
             #---------------
-            if not int(q["lecture_id"]) in user_lectures:
-                faildToCreate.append(q)
-                continue
+            newInput = [cast(QuestionFromFront,toDBFormParser(i)["output"]) for i in editorInput]
+            if len(editorInput) != len(newInput):
+                return GOutput(error={"parserError":"cannot be null"})
             #---------------
-            questions.append(
-                Question(
-                    OwnedBy=self.Owner,
-                    Text_Url=q["question"],
-                    Type=q["type"],
-                    Ans=q["ans"],
-                    InExamCounter=0,
-                    Lecture_id=q["lecture_id"],
-                    Ease=q["ease"],
-                )
-            )
+            serialized = QuestionFromFront_Serializer(data=newInput,many=True)
+            if serialized.is_valid():
+                serialized.save(OwnedBy=self.Owner)
+            else:
+                raise Exception("not vaild from serializers")
+            return GOutput(error={"success":"created successfully"})
+        except Exception as e:
+            print(e)
+            return GOutput(error={"fail":"please check admin"})
         #---------------
-        createdItems = self.Owner.Questions.bulk_create(questions)
-        if len(faildToCreate) > 0 and len(faildToCreate) < len(parseResults):
-            return {"success":"not all you job is create but some of them it you may entered a wrong lecture ids","notCreated":faildToCreate}
-        if len(faildToCreate) > 0 and len(faildToCreate) == len(parseResults):
-            return {"faild":"you may entered a wrong lecture ids","notCreated":faildToCreate}
-        if not createdItems or len(createdItems) == 0:
-            return {"fail":"creation faild"}
-        elif not len(createdItems) == len(questions):
-            return {"faild":"something went wrong not all questions created"}
-        return {"success":"creation success","createdItems":[model_to_dict(item) for item in createdItems]}
     #---------------
 #---------------CLASS_ENDED#---------------

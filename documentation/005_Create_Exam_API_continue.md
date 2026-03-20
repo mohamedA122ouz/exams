@@ -121,8 +121,10 @@ This block instructs the backend to **generate questions dynamically** and inser
 Instead of sending a full question object, the frontend may send:
 
 ```ts
-number // question ID
+[number,string] // [question ID, question Section name] 
 ```
+
+> for more declearation: [<int:ID>,<str:SectionName>,<float:degree>]
 
 The backend will:
 
@@ -131,13 +133,19 @@ The backend will:
 * Insert it in the same position in the exam
 
 ---
+shareWith example
+
+* CLASSROOM_DEFAULT = 0
+* ANY_ONE_WITH_LINK = 1
+* PRIVATE = 2
+* CLASSROOM_PUBLIC = 3
 
 ## Example: Extended Usage (Same Endpoint)
 
 ```json
 {
   "questions": [
-    25,
+    [25,"MCQ",5],
     {
       "sectionName": "MCQ",
       "question": "Which item costs more than #$100?",

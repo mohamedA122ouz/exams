@@ -161,7 +161,7 @@ The `answers` field **may be omitted or null**.
     "question": "Which element appears in image $0?",
     "questionType": 0,
     "answers": null,
-    "ease": 2,
+    "ease": 1,
     "choices": [
       "Oxygen",
       "Nitrogen",
@@ -181,7 +181,7 @@ The `answers` field **may be omitted or null**.
     "question": "Explain why the price reached #$100",
     "questionType": 2,
     "answers": null,
-    "ease": 3,
+    "ease": 2,
     "attachments": [],
     "lecture_id": 12
   }
