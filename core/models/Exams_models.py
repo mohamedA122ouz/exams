@@ -8,6 +8,8 @@ from core.services.types.questionType import QuestionEase, QuestionType, Scoring
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
 
+from core.services.utils.notification import NotificationStatus
+
 
 if TYPE_CHECKING:
     from store.models import storePayment
@@ -152,11 +154,11 @@ class ClassRoomAttachment(models.Model):
     name = models.TextField(null=False,blank=False,default='NO_NAME')
     order = models.IntegerField(default=0,null=False)
     isOrdered = models.BooleanField(null=False,default=False)
-    Attachments = models.FileField(upload_to="uploads/",null=True,default=None)
+    Attachments = models.FileField(upload_to="uploads/data/classRoom/",null=True,default=None)
     classRoom = models.ManyToManyField(classRoom,related_name="Attachments",through='classRoom_ClassRoomAttachment')
     attachmentLicence = models.OneToOneField("AttachmentLicence",on_delete=models.CASCADE,related_name='classRoomAttachment')
     otherAttachmets = models.ManyToManyField("ClassRoomAttachment",related_name="relatedAttachment")
-    thumbnail = models.FileField(upload_to="thumbnails/",null=True,default=None)
+    thumbnail = models.FileField(upload_to="uploads/thumbnails/classRoom",null=True,default=None)
     if TYPE_CHECKING:
         Payment_Attachment:Manager["Payment_Attachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
@@ -183,7 +185,6 @@ class Payment_classRoom(models.Model):
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
     classRoom:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
 #---------------
-
 class Payment_Attachment(models.Model):
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
     AccessCounter = models.BigIntegerField(null=True,blank=True)
@@ -230,9 +231,10 @@ class chatRoom(models.Model):
     # CHATROOM FIELDS
     Name = models.CharField(max_length=50,null=False)
     classRoom = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="chatRooms")
+    Notifications = models.ManyToManyField('Notification',through='Messages',related_name='chatRoom',null=False)
     if TYPE_CHECKING:
         # Privileges:ManyRelatedManager["Privileges"]
-        Messages:Manager["messages"]
+        Messages:Manager["Messages"]
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
 #---------------
 class Payment_ChatRoom(models.Model):
@@ -243,10 +245,25 @@ class Payment_ChatRoom(models.Model):
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
     chatRoom = models.ForeignKey("chatRoom",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
 #---------------
-class messages(models.Model):
+class Messages(models.Model):
+    chatRoom = models.ForeignKey("messages",on_delete=models.CASCADE)
+    notification = models.ForeignKey("notification",on_delete=models.CASCADE)
+    attachments = models.ForeignKey("chatRoom",null=True,on_delete=models.CASCADE,related_name="message")
+#---------------
+class Messages_Attachment(models.Model):
+    files = models.FileField(upload_to='uploads/chats/')
+    if TYPE_CHECKING:
+        message:Manager['Messages']
+#---------------
+class Notification(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     text = models.TextField(null=False)
-    classRoom = models.ForeignKey("classRoom",on_delete=models.CASCADE)
+    destination_Code = models.TextField(null=False)
+    reading_status = models.IntegerField(choices=NotificationStatus.choices(),default=NotificationStatus.PENDING)
+    if TYPE_CHECKING:
+        messages:Manager['Payment_ChatRoom']
+        chatRoom:ManyRelatedManager
+    #---------------
 #---------------
 class paymentLocker(models.Model):
     totalAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
@@ -268,7 +285,7 @@ class AttachmentLicence(models.Model):
         classRoomAttachment:ClassRoomAttachment
         StoreItems:"StoreItems"
 #---------------
-class dependenciesRepo(models.Model): 
+class dependenciesRepo(models.Model):
     # This table must not connect with other tables
     # This table is just a placeholder for the dependencies
     # how this works this is like a small logic 
