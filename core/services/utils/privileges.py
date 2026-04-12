@@ -22,13 +22,17 @@ class UserPrivileges(IntFlag):
     ACCESS_ATTACHMENT_WITHOUT_PAYING = 1<<13#8192
     ACCESS_CHATROOM_WITHOUT_PAYING = 1<<14#16384
     #ATTACHMENT CONTROL
-    UPLOAD_ATTACHMENT = 1<<16
-    UPDATE_ATTACHMENT = 1<<17
-    DELETE_ATTACHMENT = 1<<18
+    UPLOAD_ATTACHMENT = 1<<16#65536
+    UPDATE_ATTACHMENT = 1<<17#131072
+    DELETE_ATTACHMENT = 1<<18#262144
     # EASE TO USE
     _CONTROL_EXAM = 32783 # ALL EXAM CONTROL
     _CONTROL_STUDENTS = 4080 # All StuendtControl
     _ACCESS_PAID_FOR_FREE = 28672 # all access without payment
     _ATTACHMENT_C_UD = 458752 # Create _ Update Delete
     _OWNER_PRIVILEGES = 524287 # all
+    @classmethod
+    def tojson(cls)->dict:
+        return {item.name:item.value for item in cls}
+    #---------------
 #---------------

@@ -5,7 +5,7 @@ from django.forms import model_to_dict
 
 from core.models.Exams_models import  Lecture, Question
 from core.services.types.questionType import QuestionEase, QuestionToFront, QuestionToInsert, GeneralOutput
-from core.services.types.questionType_serializer import QuestionFromFront_Serializer
+from core.models.Model_serializers.questionType_serializer import QuestionFromFront_Serializer
 from core.services.utils.examParser import toFrontendForm, QuestionFromFront, toDBFormParser, toFrontendFormHelper
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
@@ -64,7 +64,7 @@ class QuestionServices:
         lecture:Lecture = cast(Lecture, validateOutput["output"])
         parseResult:GeneralOutput[QuestionToInsert] = toDBFormParser(editorInput) #type:ignore Validated already from valdiator
         if not parseResult["isSuccess"]:
-            return {"faild":parseResult["output"]}
+            return {"failed":parseResult["output"]}
         #---------------
         correctResult = parseResult["output"]
         q = self.Owner.Questions.create(
@@ -77,7 +77,7 @@ class QuestionServices:
             Ease=correctResult["ease"]
         )
         if not q:
-            return {"fail":"creation faild"}
+            return {"fail":"creation failed"}
         return {"success":"creation success","createdItems":model_to_dict(q)}
     #---------------
     def createQuestions(self,editorInput:Optional[list[QuestionFromFront]])->GeneralOutput:

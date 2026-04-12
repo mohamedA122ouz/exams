@@ -5,7 +5,7 @@ from django.forms import model_to_dict
 from rest_framework import serializers
 
 from core.services.types.attachmentType import Attachments
-from core.services.types.questionType_serializer import QuestionFromFront_Serializer
+from core.models.Model_serializers.questionType_serializer import QuestionFromFront_Serializer
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
 from ..types.questionType import AutoGenExamSetting, GeneralOutput, QuestionFromFront, ExamAutoGenerator, QuestionSelector,QuestionEase, QuestionType, QuestionToInsert

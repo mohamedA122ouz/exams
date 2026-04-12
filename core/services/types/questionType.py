@@ -7,9 +7,6 @@ from core.services.types.attachmentType import Attachments
 
 
 
-    
-
-
 class ScoringMode(IntEnum):
     DEFAULT = 0
     MULTI_ANS_ONE_ENOUGH = 1

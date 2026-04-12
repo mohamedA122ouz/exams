@@ -1,8 +1,10 @@
 from email.policy import default
+from typing import Type
 
 from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode
 from core.models.Exams_models import Question,Lecture
 from rest_framework import serializers
+from django.db.models import Model
 
 
 """
@@ -17,7 +19,7 @@ OwnedBy
 scoringMode
 """
 
-class QuestionFromFront_Serializer(serializers.ModelSerializer):
+class QuestionFromFront_Serializer(serializers.ModelSerializer[Question]):
     # Use names that match your QuestionFromFront TypedDict exactly
     answers = serializers.CharField(source='Ans',required=False)
     question = serializers.CharField(source='Text_Url')
@@ -34,7 +36,7 @@ class QuestionFromFront_Serializer(serializers.ModelSerializer):
         source='Lecture' # DRF will fetch the Lecture object automatically
     )
 
-    class Meta:
+    class Meta: #type:ignore
         model = Question
         fields = [
             'ID',
@@ -51,4 +53,5 @@ class QuestionFromFront_Serializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['ID','choices','attachments','createdAt','OwnedBy']
     #---------------
+    
 #---------------

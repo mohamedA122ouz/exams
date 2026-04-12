@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.db import transaction
 from core.services.utils.generalOutputHelper import GOutput
-from core.services.utils.priviliages import UserPrivileges
+from core.services.utils.privileges import UserPrivileges
 
 class GeneralExamServices:
     INITIAL_SETTINGS:ExamSettings = {
@@ -144,7 +144,7 @@ class GeneralExamServices:
         #---------------
         if len(createdObjects) == len(exam_questions):
             return GOutput(exam)
-        return GOutput(error={"faild":"something not created or something error"})
+        return GOutput(error={"failed":"something not created or something error"})
     #---------------
     def _assignExamToClassRoom(self,exam:Exam,classroom_id:int):
         classRoom = self.Requester.OwnedClasses.filter(ID=classroom_id).first()
@@ -225,7 +225,7 @@ class GeneralExamServices:
         #---------------
         if len(questions) == len(exam_questions):
             return GOutput(exam)
-        return GOutput(error={"faild":"something not created or something error"})
+        return GOutput(error={"failed":"something not created or something error"})
     #---------------
     @transaction.atomic
     def createExamHybrid(self,title:str,subject_id:int,input: list[QuestionFromFront]|list[ExamAutoGenerator]|list[list[Union[str,int,float]]],examSettings:ExamSettings)->GeneralOutput:
@@ -292,7 +292,7 @@ class GeneralExamServices:
         if output["isSuccess"] and not mainExam:
             mainExam = output["output"]
         if not mainExam:
-            return GOutput(error={"faild":"exam creation faild"})
+            return GOutput(error={"failed":"exam creation failed"})
         return GOutput({"success":"created successfully"})
     #---------------
     # passKey not needed here but the I have to write it cause no method overload her in python
@@ -308,10 +308,10 @@ class GeneralExamServices:
             if not isInClassRoom:
                 return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
             #---------------
-            if classRoomAuthenticator._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
+            if classRoomAuthenticator._AccessClassRoom(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
                 return GOutput(error={"unauthorized":"this exam is private "})
             #---------------
-            if classRoomAuthenticator._RequesterValidation(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
+            if classRoomAuthenticator._AccessClassRoom(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
                 return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
             #---------------
         #---------------
@@ -326,7 +326,7 @@ class GeneralExamServices:
                 QtoFront.append(qfrontEnd["output"][0]) #type:ignore
             #---------------
             else:
-                return GOutput(error={"faild":"cannot access question"})
+                return GOutput(error={"failed":"cannot access question"})
             #---------------
         #---------------
         return GOutput(QtoFront)
@@ -334,7 +334,7 @@ class GeneralExamServices:
     def print(self)->GeneralOutput[Any]:
         exam = Exam.objects.first()
         if not exam:
-            return GOutput(error={"faild":"no exam found"})
+            return GOutput(error={"failed":"no exam found"})
         examCre = self.sendCredentials(exam,"killer")
         if not examCre["isSuccess"] and not examCre["output"]:
             return examCre
@@ -351,7 +351,7 @@ class GeneralExamServices:
     #---------------
     def autoMarking(self,classRoom,studentSheet:solutionsSheet):
         classRoomAuthenticator = classRoomService(self.Requester)
-        output:GeneralOutput = classRoomAuthenticator._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
+        output:GeneralOutput = classRoomAuthenticator._AccessClassRoom(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
         if not output["isSuccess"]:
             return output
         studentSheet.LastUpdate = datetime.now()
@@ -412,7 +412,7 @@ class GeneralExamServices:
     #---------------
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
         classRoomAuthenticator = classRoomService(self.Requester)
-        output:GeneralOutput = classRoomAuthenticator._RequesterValidation(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
+        output:GeneralOutput = classRoomAuthenticator._AccessClassRoom(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
         if not output["isSuccess"]:
             return output
         studentSheet.LastUpdate = datetime.now()
@@ -435,7 +435,7 @@ class GeneralExamServices:
     def blackListStudent(self,student:IUserHelper,clsRoom:classRoom,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
         classRoomAuthenticator = classRoomService(self.Requester)
-        if classRoomAuthenticator._RequesterValidation(clsRoom,UserPrivileges.REMOVE_STUDNET):
+        if classRoomAuthenticator._AccessClassRoom(clsRoom,UserPrivileges.REMOVE_STUDNET):
             return GOutput(error={"blacklist":"cannot ban the owner"})
         Exam_BlackList.objects.create(
             student=student,
@@ -471,7 +471,7 @@ class OnlineExam(GeneralExamServices):
             return output
         blackListedSolnSheet = student.solnSheet.filter(student=student).first()
         if not blackListedSolnSheet:
-            return GOutput(error={"faild":"for some reason solution sheet is null"})
+            return GOutput(error={"failed":"for some reason solution sheet is null"})
         if not reason:
             return GOutput(error={"reason":"Text Reason cannot be null"})
         if not student:
@@ -584,7 +584,7 @@ class OnlineExam(GeneralExamServices):
             return output
         blackListedSolnSheet = student.solnSheet.filter(student=student).first()
         if not blackListedSolnSheet:
-            return GOutput(error={"faild":"for some reason solution sheet is null"})
+            return GOutput(error={"failed":"for some reason solution sheet is null"})
         if not reason:
             return GOutput(error={"reason":"Text Reason cannot be null"})
         if not student:

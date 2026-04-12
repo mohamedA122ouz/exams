@@ -16,8 +16,25 @@ if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ManyRelatedManager
     from store.models import StoreItems
 
-
-
+class Profitable(models.Model):
+    #payment settings
+    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
+    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
+    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+    class Meta:
+        abstract = True
+    #---------------
+#---------------
+class PaymentFields(models.Model):
+    #payment settings
+    TransactionTime = models.DateTimeField(auto_now=True)
+    ExpireDateTime = models.DateTimeField(null=True,blank=True)
+    AccessCounter = models.BigIntegerField(null=True,blank=True) #CountDown Counter
+    Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
+    class Meta:
+        abstract = True
+    #---------------
+#---------------
 class ProfileSettings(models.Model):
     ID = models.AutoField(primary_key=True)
     PreferedLang = models.ForeignKey("supportedLanguages",on_delete=models.CASCADE,null=False,related_name="Profiles")
@@ -124,11 +141,7 @@ class Soln(models.Model):
     Question:models.ForeignKey["Question"] = models.ForeignKey("Question",on_delete=models.CASCADE,related_name="Solns")
     correctedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="youCorrected",null=True,blank=True)
 #---------------
-class classRoom(models.Model):
-    #PAYMENT SETTINGS
-    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
-    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+class classRoom(Profitable):
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
     Title = models.CharField(max_length=50,null=True,default="")
@@ -136,19 +149,16 @@ class classRoom(models.Model):
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
     attachmentsCounter = models.IntegerField(default=0,null=False)
+    createAt = models.DateField(auto_now=True)
     if TYPE_CHECKING:
         Privileges: Manager["Privileges"]
-        Payment_classRoom:Manager["Payment_classRoom"]
         chatRooms:Manager["chatRoom"]
         Attachments: ManyRelatedManager["ClassRoomAttachment"]
         cl_clAttach:Manager['classRoom_ClassRoomAttachment']
         Committes:Manager['Committe']
+    #---------------
 #---------------
-class ClassRoomAttachment(models.Model):
-    #PAYMENT SETTINGS
-    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
-    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+class ClassRoomAttachment(Profitable):
     # ATTACHMENT FIELDS
     ID = models.AutoField(primary_key=True)
     name = models.TextField(null=False,blank=False,default='NO_NAME')
@@ -177,13 +187,11 @@ class classRoom_ClassRoomAttachment(models.Model):
     isOrderDepenent = models.BooleanField(default=False)
     ClassRoomAttachment = models.ForeignKey("ClassRoomAttachment",models.CASCADE,"cl_clAttach")
 #---------------
-class Payment_classRoom(models.Model):
-    TransactionTime = models.DateTimeField(auto_now=True)
-    ExpireDateTime = models.DateTimeField(null=True,blank=True)
-    AccessCounter = models.BigIntegerField(null=True,blank=True)
+class Payment_classRoom(PaymentFields):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
-    classRoom:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
+    Privilege:models.ForeignKey["Privileges"] = models.ForeignKey("Privileges",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
+    privilegesMapper = models.ForeignKey("PrivilegeMapper",on_delete=models.CASCADE,related_name='Payments')
 #---------------
 class Payment_Attachment(models.Model):
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
@@ -220,14 +228,19 @@ class Privileges(models.Model):
     Name = models.CharField(null=False,max_length=50)
     # RELATIONS
     ClassRooms:models.ForeignKey["classRoom"] = models.ForeignKey("classRoom",on_delete=models.CASCADE,related_name="Privileges",null=True)
-    Users = models.ManyToManyField(User,related_name="Privileges",default=1)
+    Users = models.ManyToManyField(User,related_name="Privileges",default=1,through="PrivilegeMapper")
     Privilege = models.IntegerField(null=False,blank=False,default=0)
+    if TYPE_CHECKING:
+        PrivilegeMapper:Manager["PrivilegeMapper"]
+        Payment_classRoom:Manager['Payment_classRoom'] 
 #---------------
-class chatRoom(models.Model):
-    # PAYMENT SETTINGS
-    paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
-    PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+class PrivilegeMapper(models.Model):
+    Users = models.ForeignKey(User,related_name="PrivilegeMapper",on_delete=models.CASCADE)
+    Privilege = models.ForeignKey(Privileges,related_name="PrivilegeMapper",on_delete=models.CASCADE)
+    if TYPE_CHECKING:
+        Payments:Manager['Payment_classRoom']
+#---------------
+class chatRoom(Profitable):
     # CHATROOM FIELDS
     Name = models.CharField(max_length=50,null=False)
     classRoom = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="chatRooms")
@@ -241,7 +254,7 @@ class Payment_ChatRoom(models.Model):
     TransactionTime = models.DateTimeField(auto_now=True)
     ExpireDateTime = models.DateTimeField(null=True,blank=True)
     AccessCounter = models.BigIntegerField(null=True,blank=True)
-    Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
+    Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False,related_name="Payment_ChatRoom")
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
     chatRoom = models.ForeignKey("chatRoom",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
 #---------------
@@ -291,7 +304,7 @@ class dependenciesRepo(models.Model):
     # how this works this is like a small logic 
     dependentTable = models.TextField() # main table like Attachment 
     dependOnTable = models.TextField() # main table depend on this table like exams
-    allowedFields = models.JSONField() # ['ID','Field1',...] 
+    allowedFields = models.JSONField() # {'ID':5,'Field1':"SOMETHING",...] 
 #---------------
 class Committe(models.Model):
     clRoom = models.ForeignKey(classRoom,models.CASCADE)

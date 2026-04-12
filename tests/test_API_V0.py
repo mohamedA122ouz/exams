@@ -9,7 +9,7 @@ from pydantic import TypeAdapter
 from core.services.questionService import QuestionServices
 from core.models.Exams_models import Lecture, Year, Term, classRoom, Subject
 from core.services.types.examTypes import examRequest
-from core.services.types.questionType_serializer import QuestionFromFront_Serializer
+from core.models.Model_serializers.questionType_serializer import QuestionFromFront_Serializer
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from .types import User_type
 from rest_framework.serializers import ListSerializer

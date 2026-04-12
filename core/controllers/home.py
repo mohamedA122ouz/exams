@@ -1,14 +1,12 @@
-from typing import Any, Optional, cast
-from django.forms import model_to_dict
+from typing import Any, cast
 from django.http import HttpRequest, HttpResponse,JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
-from core.models.Exams_models import Exam, ProfileSettings, Subject, supportedLanguages
+from core.models.Exams_models import ProfileSettings, supportedLanguages
 from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate
 from django.views.decorators.csrf import csrf_exempt
 import json
-from django.forms import model_to_dict
 
 from core.services.types.userType import IUserHelper
 from core.services.utils.jsonResponseHelper import ResponseHelper
@@ -46,14 +44,14 @@ def createUser(request:HttpRequest):
     if len(errorDict) != 0:
         if request.path.startswith("/api/"):
             return ResponseHelper(errorDict)
-        return render(request,"utils/faild.html")
+        return render(request,"utils/failed.html")
     
     try:
         user = User.objects.create_user(username=username,password=password,email=email,last_name=lastName,first_name=firstName)#type:ignore
         if not user:
             if request.path.startswith("/api/"):
                 return ResponseHelper({"fail":"something went wrong"})
-            return render(request,"utils/faild.html")
+            return render(request,"utils/failed.html")
         if request.path.startswith("/api/"):
             return ResponseHelper({"success":"signup success"})
         return render(request,"utils/createdSuccessful.html")

@@ -2,7 +2,7 @@ from typing import Any
 from django.core.management.base import BaseCommand
 
 from core.models.Exams_models import Privileges
-from core.services.utils.priviliages import UserPrivileges
+from core.services.utils.privileges import UserPrivileges
 
 class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> str | None:

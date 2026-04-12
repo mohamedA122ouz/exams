@@ -20,6 +20,6 @@ django-stubs==5.2.8
 python-magic-bin==0.4.14
 pillow==12.1.0
 qrcode[pil]==8.2
-pydantic==2.12.5 # Will be removed soon
 celery==5.6.2
 djangorestframework==3.16.1
+djangorestframework-stubs==3.16.8

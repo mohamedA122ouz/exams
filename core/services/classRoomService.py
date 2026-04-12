@@ -9,13 +9,15 @@ from core.services.utils.commands import Commands
 from core.services.utils.dependencieChecker import DependenciesAnalyzer
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.openBaseNumber import Base62
-from core.services.utils.priviliages import UserPrivileges
+from core.services.utils.privileges import UserPrivileges
 import magic
 import hashlib
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
 from django.db import transaction
+from django.db.models import F
+from core.services.utils.viewSerializers import GETREQ_Privileges, GETREQ_Privileges_TYPE, View_ShowClassRoom
 
 
 class classRoomService:
@@ -24,19 +26,43 @@ class classRoomService:
         self.UNAUTHORIZED_OBJECT = {"unauthorized":"cannot access this resource"}
         self.NOT_FOUND = {"classRoom":"is not found"}
     #---------------
-    def _RequesterValidation(self,class_room:int|classRoom,privilege:UserPrivileges,countAccessCounterDown:bool=False)->GeneralOutput[Optional[classRoom]]:
-        """For Resources that is allowed to be accessed if user paid"""
+        # Security_Layer1
+    def _UserExists(self,class_room:classRoom)->bool:
+        allPrivileges = class_room.Privileges.all()
+        users = [p.Users for p in allPrivileges]
+        return self.Requester in users
+    #---------------
+    # Security_Layer2
+    def _checkForPrivilege(self,class_room:int|classRoom,privilege:UserPrivileges):
+        """for checking for resources only without the payment stuff
+        DON'T USE OWNER_PRIVILEGES HERE THIS WILL RETURN TRUE FOR ALL ITEMS IT IS LIKE WHILE TRUE HERE
+        """
+        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(ID=class_room).first()
+        userprivilege = self.Requester.Privileges.filter(ClassRooms=wantedClassRoom).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRooms__id=class_room).all()
+        userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
+        if len(userprivilege) > 0:
+            return GOutput(wantedClassRoom)
+        return GOutput(error={"unauthorized":"cannot access this resource"})
+    #---------------
+    def _AccessClassRoom(self,class_room:int|classRoom,privilege:UserPrivileges,countAccessCounterDown:bool=False)->GeneralOutput[Optional[classRoom]]:
+        """For Resources that is allowed to be accessed if user paid
+        USING OWNER_PRIVILEGES HERE IS LIKE ONLY ACCESS IF YOU ARE THE OWNER
+        """
         wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(ID=class_room).first()
         if not wantedClassRoom:
             return GOutput(error={"classRoom":"not found"})
         if wantedClassRoom.OwnedBy == self.Requester:
             return GOutput(wantedClassRoom)
+        if privilege == UserPrivileges._OWNER_PRIVILEGES and self.Requester == wantedClassRoom.OwnedBy:
+            return GOutput(wantedClassRoom)
+        elif privilege == UserPrivileges._OWNER_PRIVILEGES:
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
         checkingResult = self._checkForPrivilege(class_room,privilege)
         if not checkingResult["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this resource"})
         if wantedClassRoom.paymentAmount == 0:
             return GOutput(wantedClassRoom)
-        if privilege == UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING:
+        if self._checkForPrivilege(class_room,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING)["isSuccess"]:
             return GOutput(wantedClassRoom)
         payment = Payment_classRoom.objects.filter(Owner=self.Requester,classRoom=wantedClassRoom).order_by('TransactionTime').first()
         if not payment:
@@ -60,19 +86,21 @@ class classRoomService:
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #---------------
     def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput[Optional[classRoom]]:
-        return self._RequesterValidation(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING,True)
+        return self._AccessClassRoom(classRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING,True)
     #---------------
-    def _checkForPrivilege(self,class_room:int|classRoom,privilege:UserPrivileges):
-        """for checking for resources only witout the payment stuff"""
-        wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(classRoom__ID=class_room).first()
-        userprivilege = self.Requester.Privileges.filter(ClassRoom=wantedClassRoom).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRoom__ID=class_room).all()
-        userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
-        if len(userprivilege) > 0:
-            return GOutput(wantedClassRoom)
-        return GOutput(error={"unauthorized":"cannot access this resource"})
+    def PrivilegeDetials(self,privilege_ID:int):
+        model = Privileges.objects.filter(id=privilege_ID).first()
+        serializer = GETREQ_Privileges(model)
+        data:GETREQ_Privileges_TYPE = serializer.data #type:ignore
+        if not self._AccessClassRoom(model.ClassRooms,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:#type:ignore
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
+        #---------------
+        allPrivileges = UserPrivileges.tojson()
+        privileges:list[str] = [ pri for pri in allPrivileges if allPrivileges[pri] & data["Privilege"] != 0]
+        return GOutput(privileges)
     #---------------
     def editSettings(self,currentRoom:classRoom,body:ClassRoomFromFrontend)->GeneralOutput:
-        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
+        if not self._AccessClassRoom(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
             return GOutput(error={"settings":"cannot set setting from null owner"})
         #---------------
         if not body:
@@ -150,7 +178,7 @@ class classRoomService:
         return GOutput({"success":"classRoom created"})
     #---------------
     def defineRoles(self,currentRoom:classRoom,roleTitle,privileges:UserPrivileges)->GeneralOutput:
-        if not self._RequesterValidation(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
+        if not self._AccessClassRoom(currentRoom,UserPrivileges._OWNER_PRIVILEGES)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot define access rules"})
         if not roleTitle:
             return GOutput(error={"roleTitle":"cannot be null"})
@@ -162,25 +190,58 @@ class classRoomService:
         )
         return GOutput({"success":"Role create successfully"})
     #---------------
-    def addUser(self, currentRoom:classRoom,role:Privileges,user:IUserHelper)->GeneralOutput:
-        if not self._RequesterValidation(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
+    def addUsers(self, currentRoom:classRoom,role:Privileges,users:list[IUserHelper])->GeneralOutput:
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.ADD_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add User"})
         #---------------
         if not currentRoom.Privileges.contains(role):
             return GOutput(error={"privileges":"cannot add user with a not exist privileges"})
         #---------------
-        role.Users.add(cast(User,user))
+        # role.Users.add(cast(User,user))
+        role.Users.add(*cast(list[User],users))
         return GOutput({"success":"user created with specified role successfully"})
     #---------------
+    def showUsers(self,currentRoom:classRoom):
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.ADD_STUDENTS | UserPrivileges.REMOVE_STUDNET)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot Add User"})
+        #---------------
+        if not currentRoom.Privileges:
+            return GOutput([])
+        #---------------
+        users = classRoom.objects.prefetch_related('Privileges__Users').filter(ID=currentRoom.ID).values(
+            username=F('Privileges__Users__username'),
+            email=F('Privileges__Users__email'),
+            first_name=F('Privileges__Users__first_name'),
+            last_name=F('Privileges__Users__last_name'),
+            id=F('Privileges__Users__id')
+        )
+        return GOutput(users)
+    #---------------
+    def removeUsers(self,currentRoom:classRoom,role:Privileges,users:list[IUserHelper]):
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.REMOVE_STUDNET)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot remove User"})
+        #---------------
+        if not currentRoom.Privileges.contains(role):
+            return GOutput(error={"privileges":"cannot remove user with a not exist privileges"})
+        #---------------
+        role.Users.remove(*cast(list[User],users))
+    #---------------
     def addExam(self,currentRoom:classRoom,Exam:Exam):
-        if not self._RequesterValidation(currentRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot Add or create Exam"})
         if not Exam:
             return GOutput(error={"Exam":"cannot be null"})
         currentRoom.Exams.add(Exam)
     #---------------
+    def removeExam(self,currentRoom:classRoom,Exam:Exam):
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
+            return GOutput(error={"unauthorized":"cannot remove Exam"})
+        if not Exam:
+            return GOutput(error={"Exam":"cannot be null"})
+        currentRoom.Exams.remove(Exam)
+    #---------------
     def addAttachment(self,currentRoom:classRoom,file:InMemoryUploadedFile,paymentAmount:float=0,PaymentExpireInterval_MIN:int=0,PaymentAccessMaxCount:int=0)->GeneralOutput:
-        if not self._RequesterValidation(currentRoom,UserPrivileges.UPLOAD_ATTACHMENT)["isSuccess"]:
+        if not self._AccessClassRoom(currentRoom,UserPrivileges.UPLOAD_ATTACHMENT)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot upload attachement"})
         mimeFile = magic.from_buffer(file.read(2048),mime=True) 
         file.seek(0)
@@ -231,8 +292,15 @@ class classRoomService:
         classRooms = self.Requester.OwnedClasses.order_by('ID').filter(ID__gt=last_id)[:limit].values('ID','Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
         return GOutput(list(classRooms))
     #---------------
+    
+    def subscripedClassRooms(self,user:IUserHelper,limit:int=100,last_id:int=0)->GeneralOutput:
+        allPrivileges = user.Privileges.all()
+        classRooms = [privilege.ClassRooms for privilege in allPrivileges]
+        viewClassRooms = View_ShowClassRoom(classRooms,many=True)
+        return GOutput(viewClassRooms.data)
+    #---------------
     def listUsersWithPrivileges(self,currentClassRoom:classRoom,privilege:UserPrivileges,limit:int=100,last_id:int=0):
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
+        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
         currentPriv = currentClassRoom.Privileges.filter(Privilege=privilege).first()
         if not currentPriv:
@@ -242,17 +310,17 @@ class classRoomService:
         return GOutput(list(users))
     #---------------
     def listPrivileges(self,currentClassRoom:classRoom)->GeneralOutput:
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
+        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
         return GOutput(list(currentClassRoom.Privileges.values('Name','id')))
     #---------------
     def listAttachments(self,currentClassRoom:classRoom):
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
+        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
         return GOutput(list(currentClassRoom.Attachments.values('name','ID')))
     #---------------
     def showAttahcment(self,currentClassRoom:classRoom,AttahcmentID:int):
-        if not self._RequesterValidation(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
+        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
         cl_att = classRoom.Attachments.filter(ID=AttahcmentID).first()
         isVerified = False

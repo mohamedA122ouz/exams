@@ -9,3 +9,5 @@ class NotificationStatus(IntEnum):
     @classmethod
     def choices(cls):
         return [ (i.value,i.name)  for i in cls]
+    #---------------
+#---------------

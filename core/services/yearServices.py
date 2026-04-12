@@ -12,7 +12,7 @@ class YearService:
         year = tempUser.Years.create(Name=yearName)
         if year:
             return {"success":"created successfully"}
-        return {"fail":"created faild"}
+        return {"fail":"created failed"}
     #---------------
     def showYears(self,user,limit:int=100,last_id:int=0)->list[dict[str,Any]]:
         user = cast(IUserHelper,user)

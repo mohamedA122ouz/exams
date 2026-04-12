@@ -4,7 +4,8 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
-from core.models.Exams_models import Committe, Exam, classRoom
+from yaml import serialize
+from core.models.Exams_models import Committe, Exam, Privileges, classRoom
 from core.services.classRoomService import classRoomService
 from core.services.committeService import CommitteServices
 from core.services.questionService import QuestionServices
@@ -13,16 +14,20 @@ from core.services.subjectService import SubjectService
 from core.services.termService import TermService
 from core.services.types.examTypes import ExamSettings, Location_Type, examRequest
 from core.services.types.userType import IUserHelper
+from core.services.utils import privileges
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
 from core.services.types.questionType import QuestionFromFront, QuestionToFront
-from core.services.utils.priviliages import UserPrivileges
+from core.services.utils.privileges import UserPrivileges
+from core.services.utils.viewSerializers import GETREQ_Privileges, GETREQ_Privileges_TYPE, GETREQ_listPrivileges, GETREQ_listPrivileges_Type, POSTREQ_addPrivilegess, POSTREQ_addPrivilegess_Type, POSTREQ_addUser, POSTREQ_addUser_Type
 from core.services.yearServices import YearService
 from core.services.examService import GeneralExamServices
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
+from rest_framework.request import Request as HTTP_REQ
+
 
 #level one
 @require_GET
@@ -173,9 +178,9 @@ def download(request:HttpRequest):
     })
     return i
 #---------------
-@require_POST
+@api_view(['POST'])
 @csrf_exempt
-def createClassRoom(request:HttpRequest):#tested
+def createClassRoom(request:HTTP_REQ):#tested
     """
     creating classroom needs the following fields in body:
         title
@@ -184,10 +189,17 @@ def createClassRoom(request:HttpRequest):#tested
         PaymentExpireInterval_MIN
         PaymentAccessMaxCount
     """
-    body = cast(ClassRoomFromFrontend,json.loads(request.body))
+    body = cast(ClassRoomFromFrontend,request.data)
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
     return ResponseHelper(clService.createClassRoom(body))
+#---------------
+@require_GET
+@csrf_exempt
+def listSubscripedClasses(request:HttpRequest):#tested
+    user = cast(IUserHelper,request.user)
+    clService = classRoomService(user)
+    return ResponseHelper(clService.subscripedClassRooms(user=user))
 #---------------
 @require_GET
 @csrf_exempt
@@ -195,6 +207,72 @@ def listclassRooms(request:HttpRequest):#tested
     user = cast(IUserHelper,request.user)
     clService = classRoomService(user)
     return ResponseHelper(clService.listClassRooms())
+#---------------
+@api_view(['GET'])
+def showRolesOnClass(request:HTTP_REQ):
+    user = cast(IUserHelper,request.user)
+    data_notValided = GETREQ_listPrivileges(data=request.query_params)
+    validation = GOutput(data_notValided)
+    if not validation["isSuccess"]:
+        return ResponseHelper(validation)
+    #---------------
+    data = cast(GETREQ_listPrivileges_Type,data_notValided.validated_data)
+    return ResponseHelper(classRoomService(user).listPrivileges(data["classroom"]))
+#---------------
+@api_view(['GET'])
+def detailsPrivilege(request:HTTP_REQ,id:int):
+    user = cast(IUserHelper,request.user)
+    clRoom = classRoomService(user)
+    return ResponseHelper(clRoom.PrivilegeDetials(id))
+#---------------
+@api_view(['GET'])
+def showRoles(request:HTTP_REQ):
+    return ResponseHelper(GOutput(privileges.UserPrivileges.tojson()))
+#---------------
+@api_view(['POST'])
+def addUsers(request:HTTP_REQ):
+    ser_input = POSTREQ_addUser(data=request.data)
+    validation = GOutput(ser_input)
+    if not validation["isSuccess"]:
+        return ResponseHelper(validation)
+    #---------------
+    data:POSTREQ_addUser_Type = ser_input.validated_data
+    cl = classRoomService(request.user)
+    return ResponseHelper(cl.addUsers(data["classroom"],data["privileges"],cast(list[IUserHelper],data["users"])))
+#---------------
+@api_view(["GET"])
+def showUsers(request:HTTP_REQ):
+    user = cast(IUserHelper,request.user)
+    data_notValided = GETREQ_listPrivileges(data=request.query_params)
+    validation = GOutput(data_notValided)
+    if not validation["isSuccess"]:
+        return ResponseHelper(validation)
+    #---------------
+    data:GETREQ_listPrivileges_Type = data_notValided.validated_data
+    cl = classRoomService(request.user)
+    return ResponseHelper(list(cl.showUsers(data["classroom"])["output"]))#type:ignore
+#---------------
+@api_view(['POST'])
+def removeUsers(request:HTTP_REQ):
+    ser_input = POSTREQ_addUser(data=request.data)
+    validation = GOutput(ser_input)
+    if not validation["isSuccess"]:
+        return ResponseHelper(validation)
+    #---------------
+    data:POSTREQ_addUser_Type = ser_input.validated_data
+    cl = classRoomService(request.user)
+    return ResponseHelper(cl.removeUsers(data["classroom"],data["privileges"],cast(list[IUserHelper],data["users"])))
+#---------------
+@api_view(['POST'])
+def addPrivileges(request:HTTP_REQ):
+    ser_input = POSTREQ_addPrivilegess(data=request.data)
+    validation = GOutput(ser_input)
+    if not validation["isSuccess"]:
+        return ResponseHelper(validation)
+    #---------------
+    data:POSTREQ_addPrivilegess_Type = ser_input.validated_data
+    cl = classRoomService(request.user)
+    return ResponseHelper(cl.defineRoles(data["classroom"],data['title'],cast(UserPrivileges,data['privileges'])))
 #---------------
 @require_POST
 @csrf_exempt
@@ -319,6 +397,28 @@ def createCommitte(request:HttpRequest):
 #---------------
 @require_POST
 def joinCommitte(request:HttpRequest):
+    """
+    student or teach join the commit - this is not an adding behaviour it is more
+    like you lost connect and reconnect
+    """
+    body:dict = json.loads(request.body)
+    committeID = body.get("committe_id",None)
+    if not committeID:
+        return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
+    #---------------
+    committe = Committe.objects.filter(id=committeID).first()
+    if not committe:
+        return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
+    #---------------
+    user = cast(IUserHelper,request.user)
+    committeService = CommitteServices(user)
+    return ResponseHelper(committeService.join(committe))
+#---------------
+@api_view(['POST'])
+def addToCommit(request:HttpRequest):
+    """
+    try to add student to the committe
+    """
     body:dict = json.loads(request.body)
     committeID = body.get("committe_id",None)
     if not committeID:

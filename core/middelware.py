@@ -16,7 +16,8 @@ class LoginRequiredMiddleware:
         # URLs you want to exclude from authentication check:
         self.exclude_paths = [
             reverse('v0_login'),
-            reverse('v0_createUser')
+            reverse('v0_createUser'),
+            reverse('v0_logout')
         ]
     #---------------
 

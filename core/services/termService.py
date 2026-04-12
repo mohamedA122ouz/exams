@@ -23,6 +23,6 @@ class TermService:
         term = user.Terms.create(Year=year,Name=name)
         if term:
             return {"success":"Term Created Successfully"}
-        return {"fail":"term creation faild"}
+        return {"fail":"term creation failed"}
     #---------------
 #---------------CLASS_ENDED#---------------

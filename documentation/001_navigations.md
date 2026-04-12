@@ -21,7 +21,7 @@
 
 ### Response Logic
 
-if user status `200` then the action is done successfully while if the status is `400` then some field is entered wrongly in frontend or not even provided and the server will return them as a key of the json and specify the error while `500` is faild to finish the action and it is an exception need to be traced in most cases `backend bug`
+if user status `200` then the action is done successfully while if the status is `400` then some field is entered wrongly in frontend or not even provided and the server will return them as a key of the json and specify the error while `500` is failed to finish the action and it is an exception need to be traced in most cases `backend bug`
 
 ### login
 
@@ -134,7 +134,7 @@ OR
 | what happen  | status | json                                                                                                                                              |
 | ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | wrong field  | `400`  | `{"name":"term name cannot be null"}` <br> `{"name":"year ID cannot be null"}` <br> `{"name":"year doesn't exist"}` (only one returned at a time) |
-| server error | `500`  | `{"fail":"term creation faild"}`                                                                                                                  |
+| server error | `500`  | `{"fail":"term creation failed"}`                                                                                                                  |
 
 ---
 
@@ -173,7 +173,7 @@ OR
 | what happen  | status | json                                                                                     |
 | ------------ | ------ | ---------------------------------------------------------------------------------------- |
 | wrong field  | `400`  | `{"name":"cannot be null"}` <br> `{"name":"cannot create two years with the same name"}` |
-| server error | `500`  | `{"fail":"created faild"}`                                                               |
+| server error | `500`  | `{"fail":"created failed"}`                                                               |
 
 ---
 
@@ -196,8 +196,8 @@ OR
 | what happen  | status | json                                                                                                                                                                                                                   |
 | ------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | server error | `200`  | `{"success":"subject created"}`                                                                                                                                                                                        |
-| wrong field  | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"faild term is not exist"}` <br> `{"creation":"faild year is not exist"}` |
-| server error | `500`  | `{"fail":"faild no reason specified"}`                                                                                                                                                                                 |
+| wrong field  | `400`  | `{"term_id":"term Id cannot be null"}` <br> `{"year_id":"cannot year ID be null"}` <br> `{"name":"cannot give null name"}` <br> `{"creation":"failed term is not exist"}` <br> `{"creation":"failed year is not exist"}` |
+| server error | `500`  | `{"fail":"failed no reason specified"}`                                                                                                                                                                                 |
 
 ---
 
@@ -334,7 +334,7 @@ OR
 | ------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | success      | `200`  | `{"success":"creation success"}`                                                                                                                                                                                |
 | wrong field  | `400`  | `{"text_url":"cannot be null"}` <br> `{"type":"cannot be null"}` <br> `{"ans":"cannot be null"}` <br> `{"lecture_id":"cannot be null"}` <br> `{"lecture":"lecture not found"}` <br> `{"type":"must be number"}` |
-| server error | `500`  | `{"fail":"creation faild"}`                                                                                                                                                                                     |
+| server error | `500`  | `{"fail":"creation failed"}`                                                                                                                                                                                     |
 
 ---
 

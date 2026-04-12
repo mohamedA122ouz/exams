@@ -16,7 +16,9 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
     if "error" in res and "isSuccess" in res and "output" in res:
         _pOutput = cast(GeneralOutput,res)
         if _pOutput["error"] is None:
-            return ResponseHelper(_pOutput["output"])
+            if isinstance(_pOutput['output'],list):
+                return ResponseHelper(_pOutput["output"])
+            return JsonResponse(_pOutput["output"])
         if _pOutput["output"] is None:
             return ResponseHelper(_pOutput["error"])
         #---------------
@@ -34,7 +36,7 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
             #---------------
         #---------------
     #---------------
-    if hasattr(res,"fail") or "fail" in res or "faild" in res or hasattr(res,"faild"):
+    if hasattr(res,"fail") or "fail" in res or "failed" in res or hasattr(res,"failed"):
         return JsonResponse(res,status=500)
     elif hasattr(res,"success") or "success" in res:
         if isinstance(res,Model):
@@ -44,5 +46,7 @@ def ResponseHelper(res:dict[str,str]|list[dict[str,Any]]|dict[str,Any] | Model |
         for key in res:
             if 'not found' in res[key]: #type:ignore
                 return JsonResponse(res,status=404)
+            if 'unauthorized' == key: #type:ignore
+                return JsonResponse(res,status=403)
         return JsonResponse(res,status=400)
 #---------------

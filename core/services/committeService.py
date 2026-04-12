@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from core.models.Exams_models import Committe, CommitteEvents, Exam
+from core.models.Exams_models import Committe, CommitteEvents, Exam, classRoom
+from core.services.classRoomService import classRoomService
 from core.services.examService import OnlineExam
 from core.services.types.examTypes import Location_Type
 from core.services.types.questionType import GeneralOutput, QuestionToFront
@@ -74,7 +75,7 @@ class CommitteServices:
             return GOutput({"success":"student joined"})
         #---------------
         self._logger("unauthorized user trying to join",committe)
-        return GOutput(error={"unauthorized":"joining faild"})
+        return GOutput(error={"unauthorized":"joining failed"})
     #---------------
     @transaction.atomic
     def startExam(self,committe:Committe)->GeneralOutput:
@@ -117,5 +118,46 @@ class CommitteServices:
         examServices = OnlineExam(self.Requester)
         examServices.autoSave(exam,passKey,q,self.Requester,ans,location)
         return GOutput({"success":"exam solved successfully"})
+    #---------------
+    def _addStudent(self,committe:Committe,student:IUserHelper):
+        """
+        this add student without check if user already exist in a sibling committee 'NOT-SAFE'
+        """
+        
+        clsRoomService = classRoomService(student)
+        clsRoom = clsRoomService.accessClassRoom(committe.clRoom)
+        if not clsRoom:
+            GOutput(error={'student':"doesn't have privileges in the classRoom"})
+        #---------------
+        try:
+            committe.allowList.create(users=student)
+            return GOutput({'success':"user created successfully"})
+        except Exception as e:
+            return GOutput(error={"fail":"cannot add this user something went wrong"})
+        #---------------
+    #---------------
+    def addOrChangeStudentPlace(self,committe:Committe,student:IUserHelper,forceChange:bool):
+        clsRoom:classRoom = committe.clRoom
+        if not clsRoom:
+            return GOutput()
+        allCommittees = clsRoom.Committes
+        if not allCommittees:
+            return GOutput()
+        #---------------
+        for committee in allCommittees.all():
+            if committee.allowList.contains(student): #type:ignore
+                if not forceChange:
+                    return GOutput(error={"student":"student already exist"})
+                #---------------
+                else:
+                    allowList = committee.allowList.filter(users=student).first()
+                    if not allowList:
+                        return GOutput()
+                    #---------------
+                    allowList.delete()
+                    return self._addStudent(committee,student)
+                #---------------
+            #---------------
+        #---------------
     #---------------
 #---------------CLASS-ENDED#---------------
