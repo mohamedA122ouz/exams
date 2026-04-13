@@ -226,6 +226,17 @@ def detailsPrivilege(request:HTTP_REQ,id:int):
     return ResponseHelper(clRoom.PrivilegeDetials(id))
 #---------------
 @api_view(['GET'])
+def UserOnPrivilege(request:HTTP_REQ,id:int):
+    user = cast(IUserHelper,request.user)
+    clRoom = classRoomService(user)
+    try:
+        privi = Privileges.objects.get(id=id)
+        return ResponseHelper(clRoom.listUsersWithPrivileges(privi))
+    except Privileges.DoesNotExist:
+        return ResponseHelper(GOutput(error={"id":"not found"}))
+    #---------------
+#---------------
+@api_view(['GET'])
 def showRoles(request:HTTP_REQ):
     return ResponseHelper(GOutput(privileges.UserPrivileges.tojson()))
 #---------------
@@ -250,7 +261,7 @@ def showUsers(request:HTTP_REQ):
     #---------------
     data:GETREQ_listPrivileges_Type = data_notValided.validated_data
     cl = classRoomService(request.user)
-    return ResponseHelper(list(cl.showUsers(data["classroom"])["output"]))#type:ignore
+    return ResponseHelper(cl.showUsers(data["classroom"]))#type:ignore
 #---------------
 @api_view(['POST'])
 def removeUsers(request:HTTP_REQ):
@@ -355,13 +366,7 @@ def listAttachment(request:HttpRequest):
         classRoomID = int(classRoomID)
     #---------------
     clService = classRoomService(user)
-    currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
-    if not currentclassRoom["isSuccess"]:
-        return ResponseHelper(currentclassRoom)
-    #---------------
-    if not currentclassRoom["output"]:
-        return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
-    attachments = clService.listAttachments(currentclassRoom["output"])
+    attachments = clService.listAttachments(classRoomID)#type:ignore
     return ResponseHelper(attachments)
 #---------------
 @require_POST

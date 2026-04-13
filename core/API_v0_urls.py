@@ -31,6 +31,7 @@ urlpatterns = [
     path('classes/users/remove',API_v0.removeUsers,name="v0_showRoles"),
     path('classes/privileges/show',API_v0.showRolesOnClass,name="v0_showRolesOnClass"),
     path('classes/privileges/<int:id>/details',API_v0.detailsPrivilege,name="v0_detailsPrivilege"),
+    path('classes/privileges/<int:id>/users',API_v0.UserOnPrivilege,name="v0_UserOnPrivilege"),
     path('classes/privileges/create',API_v0.addPrivileges,name="v0_addPrivileges"),
     path('classes/create',API_v0.createClassRoom,name="v0_createClassRoom"),
     path('classes/attachments',API_v0.listAttachment,name="v0_listAttachment"),

@@ -1,7 +1,7 @@
 from datetime import datetime
 from math import ceil
 from typing import Optional, cast
-from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Committe, CommitteAllowedList, Exam, Payment_classRoom, Privileges, WatchHistory, chatRoom, classRoom, classRoom_ClassRoomAttachment, dependenciesRepo, shareWithLink
+from core.models.Exams_models import AttachmentLicence, ClassRoomAttachment, Committe, CommitteAllowedList, Exam, Payment_Attachment, Payment_classRoom, Privileges, WatchHistory, chatRoom, classRoom, classRoom_ClassRoomAttachment, dependenciesRepo, shareWithLink
 from core.services.types.questionType import GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.classRoomTypes import ClassRoomFromFrontend
@@ -18,6 +18,7 @@ from core.services.utils.allowedFormates import ALLOWED_MIME_TYPES
 from django.db import transaction
 from django.db.models import F
 from core.services.utils.viewSerializers import GETREQ_Privileges, GETREQ_Privileges_TYPE, View_ShowClassRoom
+from django.db.models import QuerySet
 
 
 class classRoomService:
@@ -38,7 +39,7 @@ class classRoomService:
         DON'T USE OWNER_PRIVILEGES HERE THIS WILL RETURN TRUE FOR ALL ITEMS IT IS LIKE WHILE TRUE HERE
         """
         wantedClassRoom:Optional[classRoom] = class_room if isinstance(class_room,classRoom) else classRoom.objects.filter(ID=class_room).first()
-        userprivilege = self.Requester.Privileges.filter(ClassRooms=wantedClassRoom).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRooms__id=class_room).all()
+        userprivilege = self.Requester.Privileges.filter(ClassRooms=wantedClassRoom).all() if isinstance(class_room,classRoom) else self.Requester.Privileges.filter(ClassRooms__ID=class_room).all()
         userprivilege = [priv for priv in userprivilege if priv.Privilege & privilege != 0]
         if len(userprivilege) > 0:
             return GOutput(wantedClassRoom)
@@ -62,27 +63,28 @@ class classRoomService:
             return GOutput(error={"unauthorized":"cannot access this resource"})
         if wantedClassRoom.paymentAmount == 0:
             return GOutput(wantedClassRoom)
-        if self._checkForPrivilege(class_room,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING)["isSuccess"]:
-            return GOutput(wantedClassRoom)
-        payment = Payment_classRoom.objects.filter(Owner=self.Requester,classRoom=wantedClassRoom).order_by('TransactionTime').first()
+
+        payment = Payment_classRoom.objects.filter(Owner=self.Requester,Privilege__ClassRooms=wantedClassRoom).order_by('TransactionTime').first()
         if not payment:
             return GOutput(error={"unauthorized":"cannot access this resource"})
         if not payment.ExpireDateTime and not payment.AccessCounter:
             return GOutput(wantedClassRoom)
-        if payment.ExpireDateTime <= datetime.now() and not payment.AccessCounter:
+        if payment.ExpireDateTime.replace(tzinfo=None) >= datetime.now() and payment.Amount == wantedClassRoom.paymentAmount and not payment.AccessCounter:
             return GOutput(wantedClassRoom)
-        if not payment.ExpireDateTime and payment.AccessCounter > 0:
+        if not payment.ExpireDateTime.replace(tzinfo=None) and payment.AccessCounter > 0:
             if countAccessCounterDown:
                 payment.AccessCounter -= 1
                 payment.save()
             return GOutput(wantedClassRoom)
         #---------------
-        if payment.ExpireDateTime <= datetime.now() and payment.AccessCounter > 0:
+        if payment.ExpireDateTime.replace(tzinfo=None) >= datetime.now() and payment.Amount == wantedClassRoom.paymentAmount and payment.AccessCounter > 0:
             if countAccessCounterDown:
                 payment.AccessCounter -= 1
                 payment.save()
             return GOutput(wantedClassRoom)
         #---------------
+        if self._checkForPrivilege(class_room,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING)["isSuccess"]:
+            return GOutput(wantedClassRoom)
         return GOutput(error={"unauthorized":"cannot access this resource"})
     #---------------
     def accessClassRoom(self,classRoom:classRoom|int)->GeneralOutput[Optional[classRoom]]:
@@ -215,7 +217,7 @@ class classRoomService:
             last_name=F('Privileges__Users__last_name'),
             id=F('Privileges__Users__id')
         )
-        return GOutput(users)
+        return GOutput( list(users) if isinstance(users,QuerySet) else [])
     #---------------
     def removeUsers(self,currentRoom:classRoom,role:Privileges,users:list[IUserHelper]):
         if not self._AccessClassRoom(currentRoom,UserPrivileges.REMOVE_STUDNET)["isSuccess"]:
@@ -299,25 +301,43 @@ class classRoomService:
         viewClassRooms = View_ShowClassRoom(classRooms,many=True)
         return GOutput(viewClassRooms.data)
     #---------------
-    def listUsersWithPrivileges(self,currentClassRoom:classRoom,privilege:UserPrivileges,limit:int=100,last_id:int=0):
-        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
+    def listUsersWithPrivileges(self,privilege:Privileges,limit:int=100,last_id:int=0):
+        if not self._AccessClassRoom(privilege.ClassRooms,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
-        currentPriv = currentClassRoom.Privileges.filter(Privilege=privilege).first()
-        if not currentPriv:
-            return GOutput(error={"privilege":"not exist privilege"})
         #---------------
-        users = currentPriv.Users.order_by('ID').filter(ID__gt=last_id)[:limit].values('ID', 'username', 'email')
-        return GOutput(list(users))
+        return GOutput(list(privilege.Users.values('id',"username",'first_name','last_name','email')))
     #---------------
     def listPrivileges(self,currentClassRoom:classRoom)->GeneralOutput:
         if not self._AccessClassRoom(currentClassRoom,UserPrivileges.LIST_STUDENTS)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this classRoom"})
         return GOutput(list(currentClassRoom.Privileges.values('Name','id')))
     #---------------
-    def listAttachments(self,currentClassRoom:classRoom):
-        if not self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
-            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
-        return GOutput(list(currentClassRoom.Attachments.values('name','ID')))
+    def _AccessAttachment(self,currentClassRoom:classRoom|int,attachmentID:int):
+        classRoomAccessValidation = self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)
+        if not classRoomAccessValidation["isSuccess"]:
+            return GOutput(error=classRoomAccessValidation["error"])
+        #---------------
+        attachment = None
+        try:
+            attachment = ClassRoomAttachment.objects.get(ID=attachmentID)
+            payment = Payment_Attachment.objects.filter(Owner=self.Requester,classRoomAttachment=attachment).order_by("TransactionTime").first()
+            if not payment:
+                raise Payment_Attachment.DoesNotExist
+            if payment.ExpireDateTime.replace(tzinfo=None) >= datetime.now() and payment.Amount == attachment.paymentAmount:
+                return GOutput(attachment)
+        except ClassRoomAttachment.DoesNotExist:
+            return GOutput(error={"unauthorized":"cannot access attachment"})
+        except Payment_Attachment.DoesNotExist:
+            if self._checkForPrivilege(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING):
+                return GOutput(attachment)
+        #---------------
+    #---------------
+    def listAttachments(self,currentClassRoom:classRoom|int):
+        author_Output = self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING|UserPrivileges.SOLVE_EXAM_ALLOWANCE)
+        if not author_Output["isSuccess"]:
+            return GOutput(error=author_Output["error"])
+        wantedClassRoom:classRoom = author_Output["output"] #type:ignore
+        return GOutput(list(wantedClassRoom.Attachments.values('name','ID')))
     #---------------
     def showAttahcment(self,currentClassRoom:classRoom,AttahcmentID:int):
         if not self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:

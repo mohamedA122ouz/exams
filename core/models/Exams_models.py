@@ -193,13 +193,10 @@ class Payment_classRoom(PaymentFields):
     Privilege:models.ForeignKey["Privileges"] = models.ForeignKey("Privileges",null=False,on_delete=models.CASCADE,related_name="Payment_classRoom")
     privilegesMapper = models.ForeignKey("PrivilegeMapper",on_delete=models.CASCADE,related_name='Payments')
 #---------------
-class Payment_Attachment(models.Model):
-    ExpireDateTime = models.DateTimeField(null=True,blank=True)
-    AccessCounter = models.BigIntegerField(null=True,blank=True)
+class Payment_Attachment(PaymentFields):
     Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
     locker = models.ForeignKey("paymentLocker",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
     classRoomAttachment = models.ForeignKey("ClassRoomAttachment",null=False,on_delete=models.CASCADE,related_name="Payment_Attachment")
-    TransactionTime = models.DateTimeField(auto_now=True)
 #---------------
 class classRoom_Exam(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -280,7 +277,7 @@ class Notification(models.Model):
 #---------------
 class paymentLocker(models.Model):
     totalAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
-    lastUpdate = models.DateTimeField(null=False)
+    lastUpdate = models.DateTimeField(auto_now=True,null=False)
     count = models.BigIntegerField(null=False,default=0)
     if TYPE_CHECKING:
         Payment_ChatRoom:Manager["Payment_ChatRoom"]
