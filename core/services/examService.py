@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 import json
 from typing import Any, Literal, Optional, Tuple, Union, cast
-from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Location, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
+from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
 from core.services.classRoomService import classRoomService
 from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings, Location_Type
-from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionSelector, QuestionToFront, QuestionType, ScoringMode, ShareWithEnum, GeneralOutput
+from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionToFront, QuestionType, ScoringMode, ShareWithEnum, GeneralOutput
 from core.services.types.userType import IUserHelper
 from core.services.utils.examParser import autoGeneratorParser, toDBFormParser, toFrontendForm, toFrontendFormHelper
 from django.db.models import F,QuerySet

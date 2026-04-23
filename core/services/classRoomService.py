@@ -326,11 +326,12 @@ class classRoomService:
             if payment.ExpireDateTime.replace(tzinfo=None) >= datetime.now() and payment.Amount == attachment.paymentAmount:
                 return GOutput(attachment)
         except ClassRoomAttachment.DoesNotExist:
-            return GOutput(error={"unauthorized":"cannot access attachment"})
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
         except Payment_Attachment.DoesNotExist:
             if self._checkForPrivilege(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING):
                 return GOutput(attachment)
         #---------------
+        return GOutput(attachment)
     #---------------
     def listAttachments(self,currentClassRoom:classRoom|int):
         author_Output = self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_CLASSROOM_WITHOUT_PAYING|UserPrivileges.SOLVE_EXAM_ALLOWANCE)
@@ -341,7 +342,9 @@ class classRoomService:
     #---------------
     def showAttahcment(self,currentClassRoom:classRoom,AttahcmentID:int):
         if not self._AccessClassRoom(currentClassRoom,UserPrivileges.ACCESS_ATTACHMENT_WITHOUT_PAYING)["isSuccess"]:
-            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
+        if not self._AccessAttachment(currentClassRoom,AttahcmentID)["isSuccess"]:
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
         cl_att = classRoom.Attachments.filter(ID=AttahcmentID).first()
         isVerified = False
         if not cl_att:
@@ -382,10 +385,10 @@ class classRoomService:
     #---------------
     def AutocreateCommitee(self,currentClassRoom:classRoom,Exam:Exam):
         if not self._checkForPrivilege(currentClassRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
-            return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
+            return GOutput(error=self.UNAUTHORIZED_OBJECT)
         #---------------
         privileges = currentClassRoom.Privileges.all()
-        adminPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.CREATE_EXAM.value]
+        adminPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.SEE_STUDENTS_SOLN.value]
         studentsPrivileges = [priv for priv in privileges if priv.Privilege & UserPrivileges.SOLVE_EXAM_ALLOWANCE.value]
         admins = []
         for user in adminPrivileges:
@@ -416,7 +419,7 @@ class classRoomService:
         #---------------
         CommitteAllowedList.objects.bulk_create(allCommittesLists)
     #---------------
-    def ManualcreateCommitee(self,currentClassRoom:classRoom,Exam:Exam,admins:list[IUserHelper]):
+    def halfAutomaticCreateCommitee(self,currentClassRoom:classRoom,Exam:Exam,admins:list[IUserHelper]):
         if not self._checkForPrivilege(currentClassRoom,UserPrivileges.CREATE_EXAM)["isSuccess"]:
             return GOutput(error={"unauthorized":"cannot access this functionallity on classRoom"})
         #---------------
@@ -429,22 +432,52 @@ class classRoomService:
         adminsCount = len(admins)
         studentsCount = len(students)
         CommitteStudentsCount = ceil(studentsCount/adminsCount)
-        committes:list[Committe] = []
-        for admin in admins:
-            committes.append(Committe(
+        committes:list[Committe] = [
+            Committe(
                 clRoom = currentClassRoom,
                 Exam = Exam,
                 isOpened = False,
                 inspector = admin
-            ))
-        #---------------
+            )
+            for admin in admins
+        ]
         Committe.objects.bulk_create(committes)
         allCommittesLists = []
-        for i,committe in enumerate(committes):
-            start = i * CommitteStudentsCount
-            end = start + CommitteStudentsCount - 1
-            allCommittesLists += [CommitteAllowedList(users=st,committe=committe,present=False) for st in students[start:end]]
-        #---------------
+        # for i,committe in enumerate(committes):
+        #     start = i * CommitteStudentsCount
+        #     end = start + CommitteStudentsCount
+        #     allCommittesLists += [CommitteAllowedList(users=st,committe=committe,present=False) for st in students[start:end]]
+        # #---------------
+        allCommittesLists = [
+            CommitteAllowedList(users=st,committe=committe,present=False)
+            for i,committe in enumerate(committes)
+            for st in students[(i * CommitteStudentsCount):((i * CommitteStudentsCount) + CommitteStudentsCount)]
+        ]
         CommitteAllowedList.objects.bulk_create(allCommittesLists)
+        GOutput({"success":"committee created successfully"})
+    #---------------
+    def manualCreateCommittee(self,currentClassRoom:classRoom,Exam:Exam,admins:list[IUserHelper],studentsLists:list[list[IUserHelper]]):
+        if len(admins) != len(studentsLists):
+            return GOutput(error={"admins,students":"must have the same length"})
+        committes:list[Committe] = [
+            Committe(
+                clRoom = currentClassRoom,
+                Exam = Exam,
+                isOpened = False,
+                inspector = admin
+            )
+            for admin in admins
+        ]
+        Committe.objects.bulk_create(committes)
+        allCommitteesLists = [
+            CommitteAllowedList(
+                users=stList,
+                committe=committes[i],
+                present=False
+            )
+            for i,stList in enumerate(studentsLists)
+        ]
+        CommitteAllowedList.objects.bulk_create(allCommitteesLists)
+        GOutput({"success":"committee created successfully"})
     #---------------
 #---------------CLASS_ENDED#---------------

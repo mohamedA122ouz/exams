@@ -34,6 +34,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +44,7 @@ INSTALLED_APPS = [
     "core",
     'store',
     "corsheaders",
-    "rest_framework"
+    "rest_framework",
 ]
 
 
@@ -78,7 +79,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'exams.wsgi.application'
-
+ASGI_APPLICATION = 'exams.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
