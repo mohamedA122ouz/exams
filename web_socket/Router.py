@@ -1,15 +1,13 @@
-from channels.generic.websocket import AsyncWebsocketConsumer
+
 from core.models.Exams_models import ProfileSettings
 from channels.db import database_sync_to_async,aclose_old_connections
 from channels.auth import login,logout
-# Get Rid of Zombie socket names or ID
-ProfileSettings.objects.filter(socketID__isnull=False).update(socketID=None)
-#---------------FINISHED-SETUP#---------------
+from channels.generic.websocket import AsyncWebsocketConsumer
+from web_socket.Handlers.importer import IMPORTER
 
 
 
-class MainRouter(AsyncWebsocketConsumer):
-    
+class MainRouter(AsyncWebsocketConsumer,IMPORTER):
     
     async def connect(self) -> None:
         user = self.scope.get("user")
@@ -20,10 +18,15 @@ class MainRouter(AsyncWebsocketConsumer):
         if user and user.is_authenticated:
             await login(self.scope,user) #type:ignore
             print(user.get_username())
-            # database_sync_to_async(lambda: ProfileSettings.objects.filter())
             await self.accept()
-            await self.send("it is connected")
-            await self.send(user.get_username())
+            await self.send("Welcome "+user.get_username())
+            await self.channel_layer.send(channel=self.channel_name,message={
+                "type":"recieveMessage",
+                "text":"test"
+            })
+            await self.send(self.channel_name)
+            # user.Settings.socketID = self.channel_name
+            # database_sync_to_async(lambda: ProfileSettings.objects.filter())
         #---------------
         else:
             await self.accept()
