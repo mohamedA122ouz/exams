@@ -92,7 +92,7 @@ class Exam(models.Model):
     TotalMark = models.FloatField(null=False,default=0)
     PassKey = models.TextField(null=True,blank=True)
     Title = models.TextField(null=True,blank=True)
-    CreatedAt = models.DateTimeField(null=False,default=datetime.now())
+    CreatedAt = models.DateTimeField(null=False,auto_now=True)
     Subject:models.ForeignKey["Subject"] = models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="Exams")
     Owner =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="Exams",null=True,default=None)
     Solns:models.Manager["Soln"]
@@ -210,7 +210,7 @@ class supportedLanguages(models.Model):
 #---------------
 class solutionsSheet(models.Model): 
     #this is a bug cause soln sheet must be one include all soln and question so the many to many with exam and and soln must have other class
-    LastUpdate = models.DateTimeField(null=False,default=datetime.now())
+    LastUpdate = models.DateTimeField(null=False,auto_now=True)
     SubmitReason = models.IntegerField(choices= SubmitReason.choices())
     SpecifiedTextReason = models.TextField(blank=True,null=False)
     IsSubmitted = models.BooleanField(default=False,null=False)
@@ -347,7 +347,7 @@ class shareWithLink(models.Model):
 class donationTransactions(models.Model):
     Owner = models.ForeignKey(User,on_delete=models.PROTECT,null=False)
     OwnerName = models.CharField(max_length=150,null=False,blank=True)
-    Datetime = models.DateTimeField(null=False,default=datetime.now())
+    Datetime = models.DateTimeField(null=False,auto_now=True)
     Method = models.CharField(max_length=50,null=False,blank=True)
     Amount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     Type = models.IntegerField(choices=TransactionType.choices())

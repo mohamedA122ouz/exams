@@ -1,13 +1,16 @@
 
+import json
+from typing import Any
+
 from core.models.Exams_models import ProfileSettings
 from channels.db import database_sync_to_async,aclose_old_connections
 from channels.auth import login,logout
-from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from web_socket.Handlers.importer import IMPORTER
 
 
 
-class MainRouter(AsyncWebsocketConsumer,IMPORTER):
+class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
     
     async def connect(self) -> None:
         user = self.scope.get("user")
@@ -33,3 +36,7 @@ class MainRouter(AsyncWebsocketConsumer,IMPORTER):
             await self.send("unauthorized Access")
             await self.close(code=4003)
     #---------------
+    async def receive_json(self, content: Any, **kwargs: Any) -> None:
+        EXAMS_PREFIX = "EXAM_"
+        
+        

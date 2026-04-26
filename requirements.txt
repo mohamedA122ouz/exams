@@ -25,3 +25,5 @@ djangorestframework==3.16.1
 djangorestframework-stubs==3.16.8
 daphne==4.2.1
 channels[daphne]==4.3.2
+channels-redis==4.3.0
+django-redis==6.0.0
