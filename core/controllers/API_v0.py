@@ -4,7 +4,6 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET,require_POST
 from django.views.decorators.csrf import csrf_exempt
-from yaml import serialize
 from core.models.Exams_models import Committe, Exam, Privileges, classRoom
 from core.services.classRoomService import classRoomService
 from core.services.committeService import CommitteServices

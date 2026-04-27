@@ -20,15 +20,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'exams.settings')
 
 application = ProtocolTypeRouter({
     "http":get_asgi_application(),
-    # "websocket": AllowedHostsOriginValidator( #needed in the Production
-    #     AuthMiddlewareStack(
-    #         WebSocketLoginRequiredMiddleware( 
-    #             URLRouter([
-    #                 path("ws/", MainRouter.as_asgi()) #type:ignore
-    #             ])
-    #         )
-    #     )
-    # )
     "websocket": #For Testing purpose
     AuthMiddlewareStack(
         WebSocketLoginRequiredMiddleware( 

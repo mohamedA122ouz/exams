@@ -1,17 +1,16 @@
 
 import json
-from typing import Any
-
-from core.models.Exams_models import ProfileSettings
-from channels.db import database_sync_to_async,aclose_old_connections
-from channels.auth import login,logout
+from typing import Any, cast
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from core.services.types.userType import IUserHelper
+from core.services.utils.generalOutputHelper import GOutput
 from web_socket.Handlers.importer import IMPORTER
+from web_socket.types.exams import MessageEvent
 
 
 
 class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
-    
+    ConnectCommitteCommand = "Please Join Committee"
     async def connect(self) -> None:
         user = self.scope.get("user")
         cookies = self.scope.get("cookies")
@@ -19,24 +18,21 @@ class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
         print(cookies)
         print(headers)
         if user and user.is_authenticated:
-            await login(self.scope,user) #type:ignore
             print(user.get_username())
             await self.accept()
-            await self.send("Welcome "+user.get_username())
-            await self.channel_layer.send(channel=self.channel_name,message={
-                "type":"recieveMessage",
-                "text":"test"
-            })
-            await self.send(self.channel_name)
-            # user.Settings.socketID = self.channel_name
-            # database_sync_to_async(lambda: ProfileSettings.objects.filter())
+            await self.send_json(GOutput({"success":f"welcome {user.get_username()}"}))
+            user = cast(IUserHelper,user)
+            
         #---------------
         else:
             await self.accept()
-            await self.send("unauthorized Access")
+            await self.send_json(GOutput(
+                error={"unauthorized":"cannot access this resource"}
+            ))
             await self.close(code=4003)
     #---------------
-    async def receive_json(self, content: Any, **kwargs: Any) -> None:
-        EXAMS_PREFIX = "EXAM_"
-        
-        
+    async def receive_json(self, content: MessageEvent, **kwargs: Any) -> None:
+        if content["RequestType"] == "Committee" and not content["TriggerPoint"] and content["Description"] == self.ConnectCommitteCommand:
+            user = self.scope.get("user")
+            self.Committee_Connect(user)
+
