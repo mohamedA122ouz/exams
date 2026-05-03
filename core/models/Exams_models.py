@@ -7,8 +7,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode, ShareWithEnum
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
-
-from core.services.utils.notification import NotificationStatus
+from web_socket.Handlers.Chat.types.messageStatus import seenStatus
 
 
 if TYPE_CHECKING:
@@ -241,7 +240,6 @@ class chatRoom(Profitable):
     # CHATROOM FIELDS
     Name = models.CharField(max_length=50,null=False)
     classRoom = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="chatRooms")
-    Notifications = models.ManyToManyField('Notification',through='Messages',related_name='chatRoom',null=False)
     if TYPE_CHECKING:
         # Privileges:ManyRelatedManager["Privileges"]
         Messages:Manager["Messages"]
@@ -256,24 +254,20 @@ class Payment_ChatRoom(models.Model):
     chatRoom = models.ForeignKey("chatRoom",null=False,on_delete=models.CASCADE,related_name="Payment_ChatRoom")
 #---------------
 class Messages(models.Model):
-    chatRoom = models.ForeignKey("messages",on_delete=models.CASCADE)
-    notification = models.ForeignKey("notification",on_delete=models.CASCADE)
-    attachments = models.ForeignKey("chatRoom",null=True,on_delete=models.CASCADE,related_name="message")
+    chatRoom = models.ForeignKey("chatRoom",on_delete=models.CASCADE)
+    sender = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Messages")
+    ID = models.AutoField(primary_key=True)
+    text = models.TextField(blank=True)
+    createDate = models.DateTimeField(auto_now_add=True)
+    updateDate = models.DateTimeField(auto_now=True)
+    status = models.IntegerField(choices=seenStatus.choices(),default=seenStatus.PENDING)
+    readbyList = models.ManyToManyField(User,related_name="SeenMessages")
+    if TYPE_CHECKING:
+        attachments:Manager['Messages']
 #---------------
 class Messages_Attachment(models.Model):
     files = models.FileField(upload_to='uploads/chats/')
-    if TYPE_CHECKING:
-        message:Manager['Messages']
-#---------------
-class Notification(models.Model):
-    Owner = models.ForeignKey(User,on_delete=models.CASCADE,null=False)
-    text = models.TextField(null=False)
-    destination_Code = models.TextField(null=False)
-    reading_status = models.IntegerField(choices=NotificationStatus.choices(),default=NotificationStatus.PENDING)
-    if TYPE_CHECKING:
-        messages:Manager['Payment_ChatRoom']
-        chatRoom:ManyRelatedManager
-    #---------------
+    message = models.ForeignKey("Messages",on_delete=models.CASCADE,related_name="attachments")
 #---------------
 class paymentLocker(models.Model):
     totalAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)

@@ -8,5 +8,5 @@ if TYPE_CHECKING:
 
 class Receiver:
     
-    async def recieveMessage(self:"AsyncWebsocketConsumer",event):
-        await self.send("okay I am working")
+    async def recieveMessage(self:"AsyncWebsocketConsumer",event):#type:ignore
+        ...

@@ -7,17 +7,7 @@ from rest_framework import serializers
 from django.db.models import Model
 
 
-"""
-createdAt
-Text_Url
-Type
-Ans
-Lecture
-InExamCounter
-Ease
-OwnedBy
-scoringMode
-"""
+
 
 class QuestionFromFront_Serializer(serializers.ModelSerializer[Question]):
     # Use names that match your QuestionFromFront TypedDict exactly
