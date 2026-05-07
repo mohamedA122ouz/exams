@@ -17,6 +17,17 @@
             "program": "${workspaceFolder}\\manage.py"
         },
         {
+            "name": "Python Debugger: Django-linux",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "runserver"
+            ],
+            "django": true,
+            "autoStartBrowser": false,
+            "program": "${workspaceFolder}/manage.py"
+        },
+        {
             "name": "Python Debugger: Test",
             "type": "debugpy",
             "request": "launch",

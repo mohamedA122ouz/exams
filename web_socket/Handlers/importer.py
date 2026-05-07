@@ -1,6 +1,7 @@
-from web_socket.Handlers.Chat.receiver import Receiver
+from web_socket.Handlers.Chat.senderClientHandler import SenderHandler
+from web_socket.Handlers.Chat.receiverClientHandler import ReceiverHandler
 
 
-class IMPORTER(Receiver):
+class IMPORTER(SenderHandler,ReceiverHandler):
     ...
 #---------------

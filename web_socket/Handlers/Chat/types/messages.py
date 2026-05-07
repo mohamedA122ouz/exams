@@ -4,23 +4,18 @@ from rest_framework import serializers
 from core.services.types.userType import IUserHelper
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
 from core.models.Exams_models import Messages
+from django.contrib.auth.models import User
 
-# Send Message
 
-class sentMessage_D(TypedDict):
-    senderID:int
-    senderName:str
-    ID:int
-    text:str
-    createDate:str
-    updateDate:str
-    status:seenStatus
-    readbyList:dict
-#------------------
 class sendMessage_S(serializers.ModelSerializer):
     senderID = serializers.IntegerField(source="sender.id")
     senderName = serializers.StringRelatedField(source="sender.username")
     status_text = serializers.SerializerMethodField("status",source="status")
+    readbyList = serializers.PrimaryKeyRelatedField(
+        many=True,
+        required=False,  # Allows you to omit the field in the request
+        read_only=True
+    )
     def status(self,obj:int):
         choices:list[Tuple[int,str]] = seenStatus.choices()
         return [i 
@@ -41,22 +36,29 @@ class sendMessage_S(serializers.ModelSerializer):
             "status_text",
             "readbyList"
         ]
+        read_only_fields = [
+            'createDate',
+            'updateDate'
+        ]
     #------------------
 #------------------
-# Chat events
-class EventType(StrEnum):
-    TYPING = "TYPING"
-    RECORDING = "RECORDING"
-    CALLING = "CALLING"
-    UPLOADING = "UPLOADING"
-    SEEN = "SEEN"
-    RECEIVED = "RECEIVED"
-#------------------
-
-class ChatEvent_D(TypedDict):
-    senderName:str
+# Send Message
+class sentMessage_D(TypedDict):
     senderID:int
-    event:EventType
-    MessageID:int
+    senderName:str
+    ID:int
+    text:str
+    createDate:str
+    updateDate:str
+    status:seenStatus
+    readbyList:dict
+#------------------
+class messageWrapper_D(TypedDict):
+    endpoint:str
+    message:"sentMessage_D"
+#------------------
+class messageWrapper_S(serializers.Serializer):
+    endpoint = serializers.CharField()
+    message = sendMessage_S()
 #------------------
 

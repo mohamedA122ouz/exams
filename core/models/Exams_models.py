@@ -261,7 +261,7 @@ class Messages(models.Model):
     createDate = models.DateTimeField(auto_now_add=True)
     updateDate = models.DateTimeField(auto_now=True)
     status = models.IntegerField(choices=seenStatus.choices(),default=seenStatus.PENDING)
-    readbyList = models.ManyToManyField(User,related_name="SeenMessages")
+    readbyList = models.ManyToManyField(User,related_name="SeenMessages",blank=True)
     if TYPE_CHECKING:
         attachments:Manager['Messages']
 #---------------
