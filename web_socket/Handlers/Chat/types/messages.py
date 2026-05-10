@@ -1,10 +1,7 @@
-from enum import IntEnum, StrEnum
-from typing import TYPE_CHECKING, Tuple, TypedDict
+from typing import Literal, Tuple, TypedDict
 from rest_framework import serializers
-from core.services.types.userType import IUserHelper
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
-from core.models.Exams_models import Messages
-from django.contrib.auth.models import User
+from core.models.Exams_models import Messages, chatRoom
 
 
 class sendMessage_S(serializers.ModelSerializer):
@@ -36,10 +33,6 @@ class sendMessage_S(serializers.ModelSerializer):
             "status_text",
             "readbyList"
         ]
-        read_only_fields = [
-            'createDate',
-            'updateDate'
-        ]
     #------------------
 #------------------
 # Send Message
@@ -53,12 +46,20 @@ class sentMessage_D(TypedDict):
     status:seenStatus
     readbyList:dict
 #------------------
-class messageWrapper_D(TypedDict):
+class ContentWrapper_D(TypedDict):
     endpoint:str
+    sendTo_groupID:list[chatRoom]
+    type:Literal["Event","Message"]
     message:"sentMessage_D"
 #------------------
-class messageWrapper_S(serializers.Serializer):
+class ContentWrapper_S(serializers.Serializer):
     endpoint = serializers.CharField()
+    sendTo_groupID = serializers.PrimaryKeyRelatedField(
+        required=True,
+        queryset = chatRoom.objects.all(),
+        many=True
+    )
+    type = serializers.ChoiceField(choices=[("Event","Event"),("Message","Message")])
     message = sendMessage_S()
 #------------------
 

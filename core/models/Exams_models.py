@@ -239,7 +239,8 @@ class PrivilegeMapper(models.Model):
 class chatRoom(Profitable):
     # CHATROOM FIELDS
     Name = models.CharField(max_length=50,null=False)
-    classRoom = models.ForeignKey("classRoom",null=False,on_delete=models.CASCADE,related_name="chatRooms")
+    classRoom = models.ForeignKey("classRoom",null=True,on_delete=models.CASCADE,related_name="chatRooms")
+    users = models.ManyToManyField(User,related_name="chatRooms")
     if TYPE_CHECKING:
         # Privileges:ManyRelatedManager["Privileges"]
         Messages:Manager["Messages"]

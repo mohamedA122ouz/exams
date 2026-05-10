@@ -1,17 +1,17 @@
 
-import json
+import inspect
 from typing import Any, cast
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
-from web_socket.Handlers.Chat.types.messages import messageWrapper_D, messageWrapper_S, sentMessage_D
+from web_socket.Handlers.Chat.types.messages import ContentWrapper_D, ContentWrapper_S, sentMessage_D
 from web_socket.Handlers.importer import IMPORTER
+from web_socket.Handlers.utils.registerHandler import AddHandler, SecureHandler
 from web_socket.types.exams import MessageEvent
 
 
-
+@SecureHandler
 class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
-    ConnectCommitteCommand = "Please Join Committee"
     async def connect(self) -> None:
         user = self.scope.get("user")
         if user and user.is_authenticated:
@@ -27,22 +27,33 @@ class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
             ))
             await self.close(code=4003)
     #---------------
-    async def receive_json(self, content: MessageEvent, **kwargs: Any) -> None:
-        print("I am at least inside")
-        data_s = messageWrapper_S(data=content)
+    async def receive_json(self, content: Any, **kwargs: Any) -> None:
+        data_s = ContentWrapper_S(data=content)
         if data_s.is_valid():
-            validData:messageWrapper_D = data_s.validated_data
-            wantedHandlerName = validData["endpoint"]
-            wantedHandler = getattr(self,wantedHandlerName,None)
-            if wantedHandler is not None and callable(wantedHandler):
-                await wantedHandler(validData["message"]) #type:ignore
-            #------------------
+            validData:ContentWrapper_D = data_s.validated_data
+            if hasattr(self,"_allowedHandlers"):
+                allowedHandlers = getattr(self,"_allowedHandlers")
+                if validData["endpoint"] in allowedHandlers and callable(allowedHandlers[validData["endpoint"]]): #type:ignore
+                    wantedHandler = self._allowedHandlers[validData["endpoint"]]#type:ignore
+                    if inspect.iscoroutinefunction(wantedHandler):
+                        await wantedHandler(self,validData)
+                    #------------------
+                    else:
+                        wantedHandler(self,validData)
+                    #------------------
+                #------------------
+                else:
+                    await self.send("sorry cannot access this method 404, thank you for your cooperation")
+                    await self.close()
+                    return
+                #------------------
             else:
-                await self.send_json(GOutput(error={"endpoint":"is not found"}))
-                await self.close(code=4004) 
-            await self.send("thank you for your cooperation")
+                await self.send("sorry cannot access this method 404, thank you for your cooperation")
+                await self.close()
+                return
+            #------------------ 
         else:
             await self.send(str(data_s.errors))
-    async def test1(self,content:sentMessage_D):
-        print(content)
+        #------------------
     #------------------
+#------------------
