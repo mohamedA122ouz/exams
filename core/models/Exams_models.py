@@ -7,6 +7,7 @@ from core.services.types.submitReason import SubmitReason
 from core.services.types.questionType import QuestionEase, QuestionType, ScoringMode, ShareWithEnum
 from core.services.types.transactionType import TransactionType
 from django.db.models import Manager
+from web_socket.Handlers.Chat.types.events import Events
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
 
 
@@ -263,6 +264,7 @@ class Messages(models.Model):
     updateDate = models.DateTimeField(auto_now=True)
     status = models.IntegerField(choices=seenStatus.choices(),default=seenStatus.PENDING)
     readbyList = models.ManyToManyField(User,related_name="SeenMessages",blank=True)
+    event = models.CharField(choices=Events.choices(),default=Events.UserMessage.value)
     if TYPE_CHECKING:
         attachments:Manager['Messages']
 #---------------

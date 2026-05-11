@@ -1,4 +1,4 @@
-from typing import Literal, Tuple, TypedDict
+from typing import Generic, Tuple, TypeVar, TypedDict
 from rest_framework import serializers
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
 from core.models.Exams_models import Messages, chatRoom
@@ -15,10 +15,11 @@ class sendMessage_S(serializers.ModelSerializer):
     )
     def status(self,obj:int):
         choices:list[Tuple[int,str]] = seenStatus.choices()
-        return [i 
-                for i in choices
-                if i[0] == obj
-            ][0]
+        return [
+            i 
+            for i in choices
+            if i[0] == obj
+        ][0]
     #------------------
     class Meta:#type:ignore
         model = Messages
@@ -46,20 +47,22 @@ class sentMessage_D(TypedDict):
     status:seenStatus
     readbyList:dict
 #------------------
-class ContentWrapper_D(TypedDict):
+T = TypeVar("T")
+class ContentWrapper_D(TypedDict,Generic[T]):
     endpoint:str
     sendTo_groupID:list[chatRoom]
-    type:Literal["Event","Message"]
-    message:"sentMessage_D"
+    message:T
 #------------------
-class ContentWrapper_S(serializers.Serializer):
+class ContentWrapper_S(serializers.Serializer): #from-frontend
     endpoint = serializers.CharField()
     sendTo_groupID = serializers.PrimaryKeyRelatedField(
         required=True,
         queryset = chatRoom.objects.all(),
         many=True
     )
-    type = serializers.ChoiceField(choices=[("Event","Event"),("Message","Message")])
-    message = sendMessage_S()
+    message = serializers.JSONField()
 #------------------
-
+class channelEvent(TypedDict,Generic[T]):
+    type:str
+    message:T
+#------------------

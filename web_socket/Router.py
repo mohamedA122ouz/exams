@@ -6,8 +6,8 @@ from core.services.types.userType import IUserHelper
 from core.services.utils.generalOutputHelper import GOutput
 from web_socket.Handlers.Chat.types.messages import ContentWrapper_D, ContentWrapper_S, sentMessage_D
 from web_socket.Handlers.importer import IMPORTER
-from web_socket.Handlers.utils.registerHandler import AddHandler, SecureHandler
-from web_socket.types.exams import MessageEvent
+from web_socket.Handlers.utils.registerHandler import SecureHandler
+from asgiref.sync import sync_to_async
 
 
 @SecureHandler
@@ -29,7 +29,7 @@ class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
     #---------------
     async def receive_json(self, content: Any, **kwargs: Any) -> None:
         data_s = ContentWrapper_S(data=content)
-        if data_s.is_valid():
+        if await sync_to_async(data_s.is_valid)():
             validData:ContentWrapper_D = data_s.validated_data
             if hasattr(self,"_allowedHandlers"):
                 allowedHandlers = getattr(self,"_allowedHandlers")

@@ -13,8 +13,12 @@ class Events(StrEnum):
     UserPinned = "Pinned"
     UserUnpinned = "Unpinned"
     UserLeft = "Left"
+    UserMessage = "Message"
     UserJoined = "Joined"
     SystemWarning = "Warning"
     SystemError = "Error"
     SystemInfo = "Info"
+    @classmethod
+    def choices(cls):
+        return [(event.value, event.name) for event in cls]
 #------------------
