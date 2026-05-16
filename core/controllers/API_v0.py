@@ -510,3 +510,9 @@ def solveExam(request:HttpRequest):
     committeService.solveExam(questionID,passkey,committe,ans,location)
     return ResponseHelper(GOutput({"success":"commmitte started"}))
 #---------------
+@api_view(['GET'])
+def listChatRooms(request:HTTP_REQ):
+    user = cast(IUserHelper,request.user)
+    clService = classRoomService(user)
+    return ResponseHelper(clService.listChatRooms())
+#------------------

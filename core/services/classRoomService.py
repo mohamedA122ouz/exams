@@ -294,6 +294,12 @@ class classRoomService:
         classRooms = self.Requester.OwnedClasses.order_by('ID').filter(ID__gt=last_id)[:limit].values('ID','Title','HideFromSearch','OwnedBy','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
         return GOutput(list(classRooms))
     #---------------
+    def listChatRooms(self,limit:int=100,last_id:int=0)->GeneralOutput:
+        # allPrivileges = self.Requester.Privileges.all()
+        # classRooms = [privilege.ClassRooms for privilege in allPrivileges]
+        # chatRooms = chatRoom.objects.filter(classRoom__in=classRooms).order_by('ID').filter(ID__gt=last_id)[:limit].values('ID','Name','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
+        chatRooms = self.Requester.chatRooms.order_by('id').filter(id__gt=last_id)[:limit].values('id','Name','paymentAmount','PaymentExpireInterval_MIN','PaymentAccessMaxCount')
+        return GOutput(list(chatRooms))
     
     def subscripedClassRooms(self,user:IUserHelper,limit:int=100,last_id:int=0)->GeneralOutput:
         allPrivileges = user.Privileges.all()

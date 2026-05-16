@@ -95,6 +95,6 @@ def userLogin(request:HttpRequest):
             settings:ProfileSettings = cast(ProfileSettings,user.Settings)
             lang = str(cast(supportedLanguages,settings.PreferedLang).Name)
         #---------------
-        return ResponseHelper({"success":"successfully done","lang":lang})
+        return ResponseHelper({"success":"successfully done","lang":lang,"profileID":user.Settings.profileID})#type:ignore
     else:
         return ResponseHelper({"login":"username/password is wrong"})

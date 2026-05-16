@@ -44,4 +44,5 @@ urlpatterns = [
     path('committe/exam/show',API_v0.showExam,name="v0_showExam"),
     path('committe/start',API_v0.startCommitte,name="v0_startCommitte"),
     path('committe/exam/solve',API_v0.solveExam,name="v0_solveExam"),
+    path('chatRooms/list',API_v0.listChatRooms,name="v0_listChatRooms"),
 ]

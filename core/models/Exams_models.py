@@ -1,6 +1,7 @@
 from datetime import datetime
 from random import choice
 from typing import TYPE_CHECKING, Optional
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from core.services.types.submitReason import SubmitReason
@@ -41,6 +42,7 @@ class ProfileSettings(models.Model):
     User = models.OneToOneField(User,on_delete=models.CASCADE,related_name="Settings")
     socketID = models.TextField(null=True,default=None)
     Warnings = models.SmallIntegerField(default=3)
+    profileID = models.UUIDField(null=False,unique=True,default=uuid.uuid4,db_index=True)
 #---------------
 class Year(models.Model):
     ID = models.AutoField(primary_key=True)
@@ -239,6 +241,7 @@ class PrivilegeMapper(models.Model):
 #---------------
 class chatRoom(Profitable):
     # CHATROOM FIELDS
+    ChatRoomID = models.UUIDField(null=False,unique=True,default=uuid.uuid4,db_index=True)
     Name = models.CharField(max_length=50,null=False)
     classRoom = models.ForeignKey("classRoom",null=True,on_delete=models.CASCADE,related_name="chatRooms")
     users = models.ManyToManyField(User,related_name="chatRooms")

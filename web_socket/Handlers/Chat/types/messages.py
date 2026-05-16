@@ -1,25 +1,33 @@
 from typing import Generic, Tuple, TypeVar, TypedDict
 from rest_framework import serializers
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
-from core.models.Exams_models import Messages, chatRoom
-
+from core.models.Exams_models import Messages, ProfileSettings, chatRoom
+from django.contrib.auth.models import User
 
 class sendMessage_S(serializers.ModelSerializer):
-    senderID = serializers.IntegerField(source="sender.id")
+    senderID = serializers.SlugRelatedField(
+        queryset=ProfileSettings.objects.all(),
+        slug_field='profileID',  # This is the field in your DB to check against
+    )
+    
     senderName = serializers.StringRelatedField(source="sender.username")
-    status_text = serializers.SerializerMethodField("status",source="status")
+    status_text = serializers.SerializerMethodField("statusText",source="status")
+    MessageDOMID = serializers.CharField(required=False)
     readbyList = serializers.PrimaryKeyRelatedField(
         many=True,
-        required=False,  # Allows you to omit the field in the request
+        required=False,
         read_only=True
     )
-    def status(self,obj:int):
-        choices:list[Tuple[int,str]] = seenStatus.choices()
-        return [
-            i 
-            for i in choices
-            if i[0] == obj
-        ][0]
+    def statusText(self,obj:int):
+        try:
+            choices:list[Tuple[int,str]] = seenStatus.choices()
+            return [
+                i 
+                for i in choices
+                if i[0] == obj["status"]
+            ].pop()[0] #type:ignore
+        except IndexError:
+            return seenStatus.PENDING.value
     #------------------
     class Meta:#type:ignore
         model = Messages
@@ -32,19 +40,31 @@ class sendMessage_S(serializers.ModelSerializer):
             "updateDate",
             "status",
             "status_text",
-            "readbyList"
+            "readbyList",
+            "MessageDOMID"
         ]
     #------------------
+    def to_representation(self, instance):
+        # This gets the original dictionary of data
+        representation = super().to_representation(instance)
+        
+        # Manually force the profileSettings object to be its profileID string
+        if "senderID" in instance:
+            representation['senderID'] = str(instance["senderID"].profileID)
+            
+        return representation
 #------------------
 # Send Message
 class sentMessage_D(TypedDict):
-    senderID:int
+    senderID:str
     senderName:str
     ID:int
     text:str
     createDate:str
     updateDate:str
-    status:seenStatus
+    status:int #seenStatus
+    status_text:str
+    MessageDOMID:str
     readbyList:dict
 #------------------
 T = TypeVar("T")
@@ -60,7 +80,7 @@ class ContentWrapper_S(serializers.Serializer): #from-frontend
         queryset = chatRoom.objects.all(),
         many=True
     )
-    message = serializers.JSONField()
+    message = serializers.JSONField(required=False)
 #------------------
 class channelEvent(TypedDict,Generic[T]):
     type:str

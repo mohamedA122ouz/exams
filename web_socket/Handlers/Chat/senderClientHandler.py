@@ -21,7 +21,7 @@ class SenderHandler:
         isMessageValid = await sync_to_async(messageSerializer.is_valid)()
         if not isMessageValid:
             await self.send_json(GOutput(error={"failed":"message formate is wrong or invalid"}))
-        message:sentMessage_D = messageSerializer.validated_data
+        # message:sentMessage_D = messageSerializer.validated_data
         for group in ContentWrapper["sendTo_groupID"]:
             if not await database_sync_to_async(allowedGroups.contains)(group):
                 continue
@@ -45,3 +45,5 @@ class SenderHandler:
                 self.channel_name
             )
         #------------------
+    #------------------
+#------------------
