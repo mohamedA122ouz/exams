@@ -1,7 +1,11 @@
+from channels.db import database_sync_to_async
+
 from web_socket.Handlers.Chat.types.messageStatus import seenStatus
 from web_socket.Handlers.Chat.types.messages import channelEvent, sendMessage_S, sentMessage_D
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from asgiref.sync import sync_to_async
+
+from web_socket.Handlers.utils.registerHandler import AddHandler
 class ReceiverHandler:
     async def receive_message(self:"AsyncJsonWebsocketConsumer",event:channelEvent[sentMessage_D]):#type:ignore
         messageSerializer = sendMessage_S(data=event["message"])
@@ -12,4 +16,8 @@ class ReceiverHandler:
             currentData["status_text"] = seenStatus.DELIVERED.name
             await self.send_json({"type": "receive_message", "message": currentData})
         #------------------
+    #------------------
+    @AddHandler
+    async def webrtc_signaling(self:"AsyncJsonWebsocketConsumer",event:dict):#type:ignore
+        await self.send_json({"type": "receive_message", "message": event["message"]})
     #------------------

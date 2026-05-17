@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "web_socket"
 ]
 
-
 MIDDLEWARE = [
     
     'django.middleware.security.SecurityMiddleware',

@@ -40,6 +40,26 @@
             "program": "${workspaceFolder}/manage.py"
         },
         {
+    "name": "Python Debugger: Django-linux global SSL",
+    "type": "debugpy",
+    "request": "launch",
+    "args": [
+        "runserver_plus",
+        "--cert-file",
+        "/home/mohamed/192.168.2.5+1.pem",
+        "--key-file",
+        "/home/mohamed/192.168.2.5+1-key.pem",
+        "0.0.0.0:8000"
+    ],
+    "django": true,
+    "autoStartBrowser": false,
+    "program": "${workspaceFolder}/manage.py",
+    "justMyCode": true,
+    "env": {
+        "PYTHONUNBUFFERED": "1"
+    }
+},
+        {
             "name": "Python Debugger: Test",
             "type": "debugpy",
             "request": "launch",
