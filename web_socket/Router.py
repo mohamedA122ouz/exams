@@ -11,7 +11,7 @@ from asgiref.sync import sync_to_async
 
 
 @SecureHandler
-class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
+class ChatRouter(AsyncJsonWebsocketConsumer,IMPORTER):
     async def connect(self) -> None:
         user = self.scope.get("user")
         if user and user.is_authenticated:
@@ -57,3 +57,6 @@ class MainRouter(AsyncJsonWebsocketConsumer,IMPORTER):
         #------------------
     #------------------
 #------------------
+
+class ExamsRouter(AsyncJsonWebsocketConsumer):
+    pass

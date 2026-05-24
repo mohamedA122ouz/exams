@@ -22,6 +22,7 @@ class Profitable(models.Model):
     paymentAmount = models.DecimalField(null=False,default=0,decimal_places=3,max_digits=10)
     PaymentExpireInterval_MIN = models.IntegerField(null=False,default=0)
     PaymentAccessMaxCount = models.IntegerField(null=False,default=0)
+    OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="Owned_%(class)ss",null=True,default=None)
     class Meta:
         abstract = True
     #---------------
@@ -147,7 +148,6 @@ class classRoom(Profitable):
     # CLASSROOM FIELDS
     ID = models.AutoField(primary_key=True)
     Title = models.CharField(max_length=50,null=True,default="")
-    OwnedBy = models.ForeignKey(User,on_delete=models.CASCADE,related_name="OwnedClasses",null=False)
     HideFromSearch = models.BooleanField(default=False,null=False)
     Exams = models.ManyToManyField(Exam,through="classRoom_Exam",related_name="ClassRooms")
     attachmentsCounter = models.IntegerField(default=0,null=False)

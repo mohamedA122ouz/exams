@@ -14,7 +14,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 from django.urls import path
 from web_socket.MiddleWare import WebSocketLoginRequiredMiddleware
-from web_socket.Router import MainRouter
+from web_socket.Router import ChatRouter, ExamsRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'exams.settings')
 
@@ -24,7 +24,8 @@ application = ProtocolTypeRouter({
     AuthMiddlewareStack(
         WebSocketLoginRequiredMiddleware( 
             URLRouter([
-                path("ws/", MainRouter.as_asgi()) #type:ignore
+                path("chat/", ChatRouter.as_asgi()),#type:ignore
+                path("exam/", ExamsRouter.as_asgi())#type:ignore
             ])
         )
     )

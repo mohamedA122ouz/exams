@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 import json
 from typing import Any, Literal, Optional, Tuple, Union, cast
-from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
-from core.services.classRoomService import classRoomService
+from core.models.Exams_models import Exam, Exam_BlackList, Exam_Questions, Profitable, Question, Soln, classRoom, classRoom_Exam, solutionsSheet
+from core.services.ServiceProviders import BaseServiceProvider
+from core.services.classRoomService import checkForPrivilege, classRoomService
 from core.services.types.submitReason import SubmitReason
 from core.services.types.examTypes import ExamSettings, Location_Type
 from core.services.types.questionType import ExamAutoGenerator, QuestionFromFront, QuestionToFront, QuestionType, ScoringMode, ShareWithEnum, GeneralOutput
@@ -15,7 +16,7 @@ from django.db import transaction
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.privileges import UserPrivileges
 
-class GeneralExamServices:
+class GeneralExamServices(BaseServiceProvider):
     INITIAL_SETTINGS:ExamSettings = {
         "PassKey":None,
         "AllowDownload":True,
@@ -28,8 +29,9 @@ class GeneralExamServices:
         "QuestionByQuestion":False,
         "ShareWith":ShareWithEnum.PRIVATE
     }
-    def __init__(self,user) -> None:
-        self.Requester:IUserHelper = cast(IUserHelper,user)
+    def __init__(self,user,classroom) -> None:
+        super().__init__(user,cast(Profitable,classRoom),classroom)
+
     #---------------
     def validateOwnerShip(self,exam:Exam|int)->GeneralOutput[Optional[Exam]]:
         if isinstance(exam,int):
@@ -147,7 +149,7 @@ class GeneralExamServices:
         return GOutput(error={"failed":"something not created or something error"})
     #---------------
     def _assignExamToClassRoom(self,exam:Exam,classroom_id:int):
-        classRoom = self.Requester.OwnedClasses.filter(ID=classroom_id).first()
+        classRoom = self.Requester.Owned_classRooms.filter(ID=classroom_id).first()
         if classRoom and exam.Owner == self.Requester:
             classRoom.Exams.add(exam)
             return {"success":"exam assigned"}
@@ -295,6 +297,7 @@ class GeneralExamServices:
             return GOutput(error={"failed":"exam creation failed"})
         return GOutput({"success":"created successfully"})
     #---------------
+    @checkForPrivilege(privilege=UserPrivileges.SOLVE_EXAM_ALLOWANCE)
     # passKey not needed here but the I have to write it cause no method overload her in python
     def sendCredentials(self,exam:Exam,passKey:Optional[str]=None)->GeneralOutput[Optional[list[QuestionToFront]]]:
         if exam.PassKey and exam.PassKey != passKey and self.Requester != exam.Owner:
@@ -302,16 +305,10 @@ class GeneralExamServices:
         if self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.PRIVATE.value:
             return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
         elif self.Requester != exam.Owner and exam.ShareWith == ShareWithEnum.CLASSROOM_DEFAULT.value:
-            allClassRoomsStudyat = [privilege.ClassRooms for privilege in self.Requester.Privileges.all()] # there could be a better solution but it is what it is for now
-            isInClassRoom = classRoom_Exam.objects.filter(exams=exam,classRoom__in = allClassRoomsStudyat).first()
-            classRoomAuthenticator = classRoomService(self.Requester)
-            if not isInClassRoom:
-                return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
-            #---------------
-            if classRoomAuthenticator._AccessClassRoom(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
+            if  not (exam.StartAt or exam.EndAt): # if the user can solve exam and at the same time it is not specified schedular then is not accessable by those who can solve the exam
                 return GOutput(error={"unauthorized":"this exam is private "})
             #---------------
-            if classRoomAuthenticator._AccessClassRoom(isInClassRoom.classRoom,UserPrivileges.SOLVE_EXAM_ALLOWANCE) and exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
+            if exam.StartAt < datetime.now() and exam.EndAt > datetime.now() :
                 return GOutput(error={"unauthorized":"cannot get exam for None Owner"})
             #---------------
         #---------------
@@ -349,11 +346,8 @@ class GeneralExamServices:
         })
         return GOutput(i)
     #---------------
+    @checkForPrivilege(privilege=UserPrivileges.CORRECTING_STUDENTS_SOLN)
     def autoMarking(self,classRoom,studentSheet:solutionsSheet):
-        classRoomAuthenticator = classRoomService(self.Requester)
-        output:GeneralOutput = classRoomAuthenticator._AccessClassRoom(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
-        if not output["isSuccess"]:
-            return output
         studentSheet.LastUpdate = datetime.now()
         SOLNS = studentSheet.Solns.all()
         WAITIN_AI_SOLN:list[Soln] = []
@@ -410,11 +404,8 @@ class GeneralExamServices:
         # this will register a task in the background
         ... #we will connect this when needed to the ai to make the written questions corrected
     #---------------
+    @checkForPrivilege(privilege=UserPrivileges.CORRECTING_STUDENTS_SOLN)
     def mark(self,classRoom,studentSheet:solutionsSheet,soln:Soln,degree:float)->GeneralOutput:
-        classRoomAuthenticator = classRoomService(self.Requester)
-        output:GeneralOutput = classRoomAuthenticator._AccessClassRoom(classRoom,UserPrivileges.CORRECTING_STUDENTS_SOLN)
-        if not output["isSuccess"]:
-            return output
         studentSheet.LastUpdate = datetime.now()
         soln.correctedBy = self.Requester
         ExamQuestion = Exam_Questions.objects.filter(Exam=solutionsSheet.Exam ,Question=soln.Question).first()
@@ -432,11 +423,9 @@ class GeneralExamServices:
         soln.save()
         return GOutput({"success":"mark saved successfully"})
     #---------------
+    @checkForPrivilege(privilege=UserPrivileges.REMOVE_STUDNET)
     def blackListStudent(self,student:IUserHelper,clsRoom:classRoom,exam:Exam,reason:str)->GeneralOutput:
         """kick this student from the current exam session and add him/her to blacklist so they cannot enter it back"""
-        classRoomAuthenticator = classRoomService(self.Requester)
-        if classRoomAuthenticator._AccessClassRoom(clsRoom,UserPrivileges.REMOVE_STUDNET):
-            return GOutput(error={"blacklist":"cannot ban the owner"})
         Exam_BlackList.objects.create(
             student=student,
             exams=exam,
@@ -465,6 +454,7 @@ class GeneralExamServices:
 #---------------CLASS-ENDED#---------------
 
 class OnlineExam(GeneralExamServices):
+    @checkForPrivilege(privilege=UserPrivileges.REMOVE_STUDNET)
     def blackListStudent(self, student: IUserHelper,clsRoom:classRoom ,exam: Exam, reason: str) -> GeneralOutput:
         output = super().blackListStudent(student, clsRoom,exam, reason)
         if not output["isSuccess"]:

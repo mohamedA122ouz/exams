@@ -14,10 +14,12 @@ class IUserHelper(Protocol):
     Exams: Manager["Exam"]
     Questions: Manager["Question"]
     Solns: Manager["Soln"]
-    OwnedClasses:Manager["classRoom"]
+    Owned_classRooms:Manager["classRoom"]
     Settings:Optional["ProfileSettings"]
     solnSheet:Manager["solutionsSheet"]
     Balance:Optional["balance"]
+    Owned_chatRoom:Manager["chatRoom"]
+    Owned_classroomattachments:Manager["Payment_classRoom"]
     if TYPE_CHECKING:
         blackListed:ManyRelatedManager["Exam"]
         ExamBlackListTable:ManyRelatedManager["Exam_BlackList"]

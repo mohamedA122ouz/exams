@@ -14,7 +14,7 @@ from core.services.termService import TermService
 from core.services.types.examTypes import ExamSettings, Location_Type, examRequest
 from core.services.types.userType import IUserHelper
 from core.services.utils import privileges
-from core.services.utils.classRoomTypes import ClassRoomFromFrontend
+from core.services.utils.classRoomTypes import ClassRoomFromFrontend_TD, ClassRoomFromFrontend_s
 from core.services.utils.generalOutputHelper import GOutput
 from core.services.utils.jsonResponseHelper import ResponseHelper
 from core.services.types.questionType import QuestionFromFront, QuestionToFront
@@ -144,9 +144,13 @@ def listExams(request:HttpRequest):
 #---------------
 @require_GET
 @csrf_exempt
-def download(request:HttpRequest):
+def download(request:HTTP_REQ):
     user = cast(IUserHelper,request.user)
-    exam_GEN = GeneralExamServices(user)
+    try:
+        exam_GEN = GeneralExamServices(user,request.data.get("classroom",None))
+    except Exception as e:
+        return ResponseHelper(GOutput(error={"classroom":"cannot be null"}))
+    #------------------
     exam = Exam.objects.first()
     if not exam:
         return ResponseHelper(GOutput(error={"test":"testing"}))
@@ -188,24 +192,21 @@ def createClassRoom(request:HTTP_REQ):#tested
         PaymentExpireInterval_MIN
         PaymentAccessMaxCount
     """
-    body = cast(ClassRoomFromFrontend,request.data)
+    body = cast(ClassRoomFromFrontend_TD,request.data)
     user = cast(IUserHelper,request.user)
-    clService = classRoomService(user)
-    return ResponseHelper(clService.createClassRoom(body))
+    return ResponseHelper(classRoomService.createClassRoom(user, body))
 #---------------
 @require_GET
 @csrf_exempt
 def listSubscripedClasses(request:HttpRequest):#tested
     user = cast(IUserHelper,request.user)
-    clService = classRoomService(user)
-    return ResponseHelper(clService.subscripedClassRooms(user=user))
+    return ResponseHelper(classRoomService.subscripedClassRooms(user=user))
 #---------------
 @require_GET
 @csrf_exempt
 def listclassRooms(request:HttpRequest):#tested
     user = cast(IUserHelper,request.user)
-    clService = classRoomService(user)
-    return ResponseHelper(clService.listClassRooms())
+    return ResponseHelper(classRoomService.listClassRooms(user))
 #---------------
 @api_view(['GET'])
 def showRolesOnClass(request:HTTP_REQ):
@@ -216,18 +217,24 @@ def showRolesOnClass(request:HTTP_REQ):
         return ResponseHelper(validation)
     #---------------
     data = cast(GETREQ_listPrivileges_Type,data_notValided.validated_data)
-    return ResponseHelper(classRoomService(user).listPrivileges(data["classroom"]))
+    return ResponseHelper(classRoomService(user,data["classroom"]).listPrivileges())
 #---------------
 @api_view(['GET'])
 def detailsPrivilege(request:HTTP_REQ,id:int):
     user = cast(IUserHelper,request.user)
-    clRoom = classRoomService(user)
+    try:
+        clRoom = classRoomService(user,request.data.get("classroom",None))
+    except:
+        return ResponseHelper(GOutput(error={"classroom":"cannot be null"}))
     return ResponseHelper(clRoom.PrivilegeDetials(id))
 #---------------
 @api_view(['GET'])
 def UserOnPrivilege(request:HTTP_REQ,id:int):
     user = cast(IUserHelper,request.user)
-    clRoom = classRoomService(user)
+    try:
+        clRoom = classRoomService(user,request.data.get("classroom",None))
+    except:
+        return ResponseHelper(GOutput(error={"classroom":"cannot be null"}))
     try:
         privi = Privileges.objects.get(id=id)
         return ResponseHelper(clRoom.listUsersWithPrivileges(privi))
@@ -247,8 +254,8 @@ def addUsers(request:HTTP_REQ):
         return ResponseHelper(validation)
     #---------------
     data:POSTREQ_addUser_Type = ser_input.validated_data
-    cl = classRoomService(request.user)
-    return ResponseHelper(cl.addUsers(data["classroom"],data["privileges"],cast(list[IUserHelper],data["users"])))
+    cl = classRoomService(request.user,data["classroom"])
+    return ResponseHelper(cl.addUsers(data["privileges"],cast(list[IUserHelper],data["users"])))
 #---------------
 @api_view(["GET"])
 def showUsers(request:HTTP_REQ):
@@ -259,8 +266,8 @@ def showUsers(request:HTTP_REQ):
         return ResponseHelper(validation)
     #---------------
     data:GETREQ_listPrivileges_Type = data_notValided.validated_data
-    cl = classRoomService(request.user)
-    return ResponseHelper(cl.showUsers(data["classroom"]))#type:ignore
+    cl = classRoomService(request.user,data["classroom"])
+    return ResponseHelper(cl.showUsers())
 #---------------
 @api_view(['POST'])
 def removeUsers(request:HTTP_REQ):
@@ -270,8 +277,8 @@ def removeUsers(request:HTTP_REQ):
         return ResponseHelper(validation)
     #---------------
     data:POSTREQ_addUser_Type = ser_input.validated_data
-    cl = classRoomService(request.user)
-    return ResponseHelper(cl.removeUsers(data["classroom"],data["privileges"],cast(list[IUserHelper],data["users"])))
+    cl = classRoomService(request.user,data["classroom"])
+    return ResponseHelper(cl.removeUsers(data["privileges"],cast(list[IUserHelper],data["users"])))
 #---------------
 @api_view(['POST'])
 def addPrivileges(request:HTTP_REQ):
@@ -281,8 +288,8 @@ def addPrivileges(request:HTTP_REQ):
         return ResponseHelper(validation)
     #---------------
     data:POSTREQ_addPrivilegess_Type = ser_input.validated_data
-    cl = classRoomService(request.user)
-    return ResponseHelper(cl.defineRoles(data["classroom"],data['title'],cast(UserPrivileges,data['privileges'])))
+    cl = classRoomService(request.user,data["classroom"])
+    return ResponseHelper(cl.defineRoles(data['title'],cast(UserPrivileges,data['privileges'])))
 #---------------
 @require_POST
 @csrf_exempt
@@ -297,16 +304,12 @@ def assignExamToClassRoom(request:HttpRequest):
     if examID and isinstance(examID,str) and not examID.isnumeric():
         examID = int(examID)
     #---------------
-    clService = classRoomService(user)
-    currentclassRoom = clService.accessClassRoom(UserPrivileges.SOLVE_EXAM_ALLOWANCE)
-    if not currentclassRoom["isSuccess"]:
-        return currentclassRoom
-    #---------------
-    examServices = GeneralExamServices(user)
+    clService = classRoomService(user,classRoomID)
+    examServices = GeneralExamServices(user,classRoomID)
     exam = examServices.validateOwnerShip(cast(int,examID))
     if not exam["isSuccess"]:
-        return currentclassRoom
-    clService.addExam(currentclassRoom["output"],exam["output"]) #type:ignore
+        return exam["error"]
+    clService.addExam(cast(Exam,exam["output"]))
     return ResponseHelper(GOutput({"success":"exam assigend"})) 
 #---------------
 @require_POST
@@ -340,16 +343,9 @@ def uploadAttachment(request:HttpRequest):
     if classRoomID.isnumeric():
         classRoomID = int(classRoomID)
     #---------------
-    clService = classRoomService(user)
-    currentclassRoom = clService.accessClassRoom(classRoomID) #type:ignore
-    if not currentclassRoom["isSuccess"]:
-        return ResponseHelper(currentclassRoom)
-    #---------------
-    if not currentclassRoom["output"]:
-        return ResponseHelper(GOutput(error={'fail':"something went wrong cannot access classroom"}))
-    #---------------
+    clService = classRoomService(user,classRoomID)
     file = request.FILES["uploaded"]
-    result = clService.addAttachment(currentclassRoom["output"],cast(InMemoryUploadedFile,file),paymentAmount,PaymentExpireInterval_MIN,PaymentAccessMaxCount) #type:ignore
+    result = clService.addAttachment(cast(InMemoryUploadedFile,file),paymentAmount,PaymentExpireInterval_MIN,PaymentAccessMaxCount) #type:ignore
     if not result["isSuccess"]:
         return ResponseHelper(result)
     return ResponseHelper(GOutput({"success":"attahcment uploaded"}))
@@ -364,16 +360,17 @@ def listAttachment(request:HttpRequest):
     if classRoomID.isnumeric():
         classRoomID = int(classRoomID)
     #---------------
-    clService = classRoomService(user)
-    attachments = clService.listAttachments(classRoomID)#type:ignore
+    clService = classRoomService(user,classRoomID)
+    attachments = clService.listAttachments()
     return ResponseHelper(attachments)
 #---------------
-@require_POST
-def createCommitte(request:HttpRequest):
-    body:dict = json.loads(request.body)
-    users = body.get("users",None)
-    clRoomID = body.get('clsRoom',None)
-    examID = body.get('examID',None)
+@api_view(["POST"])
+def createCommitte(request:HTTP_REQ):
+    user = request.user
+    users = request.data.get("users",None)
+    clRoomID = request.data.get('clsRoom',None)
+    examID = request.data.get('examID',None)
+    studentsLists = request.data.get("students[]",[])
     if not users:
         return ResponseHelper(GOutput(error={"users":"cannot be null"}))
     #---------------
@@ -393,11 +390,12 @@ def createCommitte(request:HttpRequest):
     #---------------
     try:
         admins = cast(list[IUserHelper],list(User.objects.filter(id__in=users).all()))
-        user = request.user
-        clService = classRoomService(user)
-        clService.ManualcreateCommitee(clRoom,exam,admins)
+        students = [cast(list[IUserHelper],list(User.objects.filter(id__in=stSublist).all())) for stSublist in studentsLists]
+        clService = classRoomService(user,clRoom)
+        clService.manualCreateCommittee(exam,admins,students)
     except Exception as e:
         return ResponseHelper(GOutput(error={"fail":"something went wrong"}))
+    return ResponseHelper(GOutput({"test":"may be correct"}))
 #---------------
 @require_POST
 def joinCommitte(request:HttpRequest):
@@ -415,7 +413,7 @@ def joinCommitte(request:HttpRequest):
         return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
     #---------------
     user = cast(IUserHelper,request.user)
-    committeService = CommitteServices(user)
+    committeService = CommitteServices(user,committe.clRoom)
     return ResponseHelper(committeService.join(committe))
 #---------------
 @api_view(['POST'])
@@ -433,24 +431,28 @@ def addToCommit(request:HttpRequest):
         return ResponseHelper(GOutput(error={"committe":"cannot be null"}))
     #---------------
     user = cast(IUserHelper,request.user)
-    committeService = CommitteServices(user)
+    committeService = CommitteServices(user,committe.clRoom)
     return ResponseHelper(committeService.join(committe))
 #---------------
-@require_GET
+@api_view(["GET"])
 @csrf_exempt
-def showExamOutOfCommit(request:HttpRequest):
+def showExamOutOfCommit(request:HTTP_REQ):
     user = cast(IUserHelper,request.user)
     examID = request.GET.get("exam_id",None)
+    classroom = request.query_params.get("classroom",None)
     if not examID:
         return ResponseHelper(GOutput(error={"exam_id":"cannot be null"}))
-    examService = GeneralExamServices(user)
+    try:
+        examService = GeneralExamServices(user,classroom)
+    except:
+        return ResponseHelper(GOutput(error={"classroom":"cannot be null"}))
     exam:Optional[Exam] = user.Exams.filter(ID=examID).first()
     if not exam:
         return ResponseHelper(GOutput(error={"exam":"is not found"}))
     frontEndData = examService.sendCredentials(exam)
     return ResponseHelper(frontEndData)
 #------------------
-@require_POST
+@api_view(["GET"])
 def showExam(request:HttpRequest):
     body:dict = json.loads(request.body)
     committeID = body.get("committe_id",None)
@@ -461,7 +463,7 @@ def showExam(request:HttpRequest):
         return ResponseHelper(committeOuput)
     #---------------
     committe = cast(Committe,committeOuput["output"])
-    committeService = CommitteServices(user)
+    committeService = CommitteServices(user,cast(Committe,committeOuput["output"]).clRoom)
     return ResponseHelper(committeService.getExamCredentials(committe,passkey))
 #---------------
 @require_POST
@@ -473,7 +475,7 @@ def startCommitte(request:HttpRequest):
     if not committeOuput["isSuccess"]:
         return ResponseHelper(committeOuput)
     #---------------
-    committeService = CommitteServices(user)
+    committeService = CommitteServices(user,cast(Committe,committeOuput["output"]).clRoom)
     committeService.startCommitte(committeOuput["output"])#type:ignore
     return ResponseHelper(GOutput({"success":"commmitte started"}))
 #---------------
@@ -481,7 +483,6 @@ def startCommitte(request:HttpRequest):
 def solveExam(request:HttpRequest):
     body:dict = json.loads(request.body)
     user = cast(IUserHelper,request.user)
-    committeService = CommitteServices(user)
     questionID = body.get("qID",None)
     if not questionID:
         return ResponseHelper(GOutput(error={"qID":"cannot be null"}))
@@ -507,12 +508,12 @@ def solveExam(request:HttpRequest):
     if not committe:
         return ResponseHelper(GOutput(error={"committe":"not found"}))
     #---------------
+    committeService = CommitteServices(user,cast(Committe,committeOuput["output"]).clRoom)
     committeService.solveExam(questionID,passkey,committe,ans,location)
     return ResponseHelper(GOutput({"success":"commmitte started"}))
 #---------------
 @api_view(['GET'])
 def listChatRooms(request:HTTP_REQ):
     user = cast(IUserHelper,request.user)
-    clService = classRoomService(user)
-    return ResponseHelper(clService.listChatRooms())
+    return ResponseHelper(classRoomService.listChatRooms(user))
 #------------------

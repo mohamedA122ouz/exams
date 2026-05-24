@@ -1,6 +1,4 @@
-from curses import wrapper
-from functools import wraps
-from typing import TYPE_CHECKING, Any,Callable, Type, TypeVar
+from typing import Callable, Type, TypeVar
 from channels.generic.websocket import AsyncWebsocketConsumer 
 
 def AddHandler(handlerFunc:Callable):
